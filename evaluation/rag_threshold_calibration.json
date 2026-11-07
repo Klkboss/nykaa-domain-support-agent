@@ -1,0 +1,187 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "retrieval": "search(): metadata-aware query analysis + dense top-k",
+  "method": "threshold = (min in-scope top-1 + max out-of-scope top-1) / 2 on UNROUNDED similarities, then rounded to 3 decimals",
+  "strategies": {
+    "fixed": {
+      "collection": "policies_fixed_overlap",
+      "measurements": [
+        {
+          "scope": "in_scope",
+          "query": "How long does delivery take to a metro city?",
+          "expected_doc_id": "KB-03",
+          "routed_topic": null,
+          "top1_doc_id": "KB-03",
+          "top1_similarity": 0.7646313309669495
+        },
+        {
+          "scope": "in_scope",
+          "query": "Can a courier collect a heavy bedsheet set I want to return?",
+          "expected_doc_id": "KB-04",
+          "routed_topic": null,
+          "top1_doc_id": "KB-01",
+          "top1_similarity": 0.42468154430389404
+        },
+        {
+          "scope": "in_scope",
+          "query": "How do I reach a senior support specialist about an unresolved complaint?",
+          "expected_doc_id": "KB-12",
+          "routed_topic": "escalation_matrix",
+          "top1_doc_id": "KB-12",
+          "top1_similarity": 0.4889788031578064
+        },
+        {
+          "scope": "in_scope",
+          "query": "Can I swap a dress for a smaller size?",
+          "expected_doc_id": "KB-09",
+          "routed_topic": null,
+          "top1_doc_id": "KB-09",
+          "top1_similarity": 0.43076401948928833
+        },
+        {
+          "scope": "in_scope",
+          "query": "When do my loyalty points expire?",
+          "expected_doc_id": "KB-07",
+          "routed_topic": null,
+          "top1_doc_id": "KB-07",
+          "top1_similarity": 0.6498973965644836
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "What is the capital of France?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-11",
+          "top1_similarity": 0.0872756838798523
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "Give me a recipe for chocolate chip cookies.",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-08",
+          "top1_similarity": 0.09690070152282715
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "Who won the 2011 Cricket World Cup?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-08",
+          "top1_similarity": 0.138946533203125
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "How do I fix a flat bicycle tyre?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-01",
+          "top1_similarity": 0.10614055395126343
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "What will the weather be like in Mumbai tomorrow?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-12",
+          "top1_similarity": 0.236005961894989
+        }
+      ],
+      "unrounded_midpoint": 0.33034375309944153,
+      "min_in_scope": 0.42468154430389404,
+      "max_out_of_scope": 0.236005961894989,
+      "gap": 0.18867558240890503,
+      "threshold": 0.33
+    },
+    "sentence": {
+      "collection": "policies_sentence_based",
+      "measurements": [
+        {
+          "scope": "in_scope",
+          "query": "How long does delivery take to a metro city?",
+          "expected_doc_id": "KB-03",
+          "routed_topic": null,
+          "top1_doc_id": "KB-03",
+          "top1_similarity": 0.7007429599761963
+        },
+        {
+          "scope": "in_scope",
+          "query": "Can a courier collect a heavy bedsheet set I want to return?",
+          "expected_doc_id": "KB-04",
+          "routed_topic": null,
+          "top1_doc_id": "KB-04",
+          "top1_similarity": 0.496315598487854
+        },
+        {
+          "scope": "in_scope",
+          "query": "How do I reach a senior support specialist about an unresolved complaint?",
+          "expected_doc_id": "KB-12",
+          "routed_topic": "escalation_matrix",
+          "top1_doc_id": "KB-12",
+          "top1_similarity": 0.4691302180290222
+        },
+        {
+          "scope": "in_scope",
+          "query": "Can I swap a dress for a smaller size?",
+          "expected_doc_id": "KB-09",
+          "routed_topic": null,
+          "top1_doc_id": "KB-09",
+          "top1_similarity": 0.4120281934738159
+        },
+        {
+          "scope": "in_scope",
+          "query": "When do my loyalty points expire?",
+          "expected_doc_id": "KB-07",
+          "routed_topic": null,
+          "top1_doc_id": "KB-07",
+          "top1_similarity": 0.6842029094696045
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "What is the capital of France?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-11",
+          "top1_similarity": 0.12040120363235474
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "Give me a recipe for chocolate chip cookies.",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-08",
+          "top1_similarity": 0.09864264726638794
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "Who won the 2011 Cricket World Cup?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-05",
+          "top1_similarity": 0.1631811261177063
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "How do I fix a flat bicycle tyre?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-05",
+          "top1_similarity": 0.15887749195098877
+        },
+        {
+          "scope": "out_of_scope",
+          "query": "What will the weather be like in Mumbai tomorrow?",
+          "expected_doc_id": null,
+          "routed_topic": null,
+          "top1_doc_id": "KB-03",
+          "top1_similarity": 0.19095361232757568
+        }
+      ],
+      "unrounded_midpoint": 0.3014909029006958,
+      "min_in_scope": 0.4120281934738159,
+      "max_out_of_scope": 0.19095361232757568,
+      "gap": 0.22107458114624023,
+      "threshold": 0.301
+    }
+  }
+}

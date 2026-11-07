@@ -1,0 +1,33 @@
+$ .venv\Scripts\python.exe scripts\run_api_demo.py   # run 2026-11-02 16:09
+Real uvicorn server at http://127.0.0.1:54312 (FastAPI app from app.api.main.create_app); socket guard active.
+
+=== G. WebSocket multi-turn chat (session memory over one connection) ===
+>>> Hi, my order ID is ORD-1016.
+<<< {"trace_id": "59baa695d3714f8c871af7291894f7af", "new_session": true, "status": "answered", "reply": "Order information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."}
+>>> What is the status of that order?
+<<< {"trace_id": "e6f5873eecd0478daa8feb3ce17c2cb1", "new_session": false, "status": "answered", "reply": "Order information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."}
+>>> not json at all
+<<< {"trace_id": "a3378bdea3804b188b3c76fc7dd92a44", "error": {"type": "validation_error", "message": "Send {\"question\": \"...\"}.", "details": [{"loc": [], "type": "json_invalid", "msg": "Invalid JSON: expected ident at line 1 column 2"}]}}
+
+=== H. Client disconnects mid-conversation (TCP dropped while the server is answering) ===
+<<< turn 1: Order information (ORD-1029): status Delivered, order value ₹3,562. Escalation s ...
+>>> sent turn 2, then dropped the TCP connection without reading the reply
+
+=== I. A new client connects and chats normally; HTTP still works ===
+<<< new WS client: Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+<<< HTTP after the disconnect: 200
+
+=== Log evidence: WebSocket events ===
+{"timestamp": "2026-11-02T10:39:04.075+00:00", "type": "websocket", "event": "connect", "endpoint": "/ws/chat", "connection_id": "6d623d1a3425", "session_id": "demo-ws-1", "outcome": "ok"}
+{"timestamp": "2026-11-02T10:39:04.267+00:00", "type": "websocket", "event": "message", "endpoint": "/ws/chat", "trace_id": "59baa695d3714f8c871af7291894f7af", "connection_id": "6d623d1a3425", "session_id": "demo-ws-1", "outcome": "ok", "masked_question": "Hi, my order ID is ORD-1016.", "response_status": "answered", "guardrails": {"pii_masked": {}, "injection_detected": false, "refused": false, "grounded": true, "rejected_order": false, "schema_valid": true}, "duration_ms": 191.84}
+{"timestamp": "2026-11-02T10:39:04.490+00:00", "type": "websocket", "event": "message", "endpoint": "/ws/chat", "trace_id": "e6f5873eecd0478daa8feb3ce17c2cb1", "connection_id": "6d623d1a3425", "session_id": "demo-ws-1", "outcome": "ok", "masked_question": "What is the status of that order?", "response_status": "answered", "guardrails": {"pii_masked": {}, "injection_detected": false, "refused": false, "grounded": true, "rejected_order": false, "schema_valid": true}, "duration_ms": 220.9}
+{"timestamp": "2026-11-02T10:39:04.491+00:00", "type": "websocket", "event": "message", "endpoint": "/ws/chat", "trace_id": "a3378bdea3804b188b3c76fc7dd92a44", "connection_id": "6d623d1a3425", "session_id": "demo-ws-1", "outcome": "client_error", "error_type": "validation_error", "duration_ms": 0.22}
+{"timestamp": "2026-11-02T10:39:04.491+00:00", "type": "websocket", "event": "disconnect", "endpoint": "/ws/chat", "connection_id": "6d623d1a3425", "session_id": "demo-ws-1", "close_code": 1000, "reason": "client_disconnected", "outcome": "ok"}
+{"timestamp": "2026-11-02T10:39:04.495+00:00", "type": "websocket", "event": "connect", "endpoint": "/ws/chat", "connection_id": "54b44faffb01", "session_id": "demo-ws-drop", "outcome": "ok"}
+{"timestamp": "2026-11-02T10:39:04.686+00:00", "type": "websocket", "event": "message", "endpoint": "/ws/chat", "trace_id": "4b619dd397254bd59a2d4ae81ea151d7", "connection_id": "54b44faffb01", "session_id": "demo-ws-drop", "outcome": "ok", "masked_question": "My order is ORD-1029.", "response_status": "answered", "guardrails": {"pii_masked": {}, "injection_detected": false, "refused": false, "grounded": true, "rejected_order": false, "schema_valid": true}, "duration_ms": 189.09}
+{"timestamp": "2026-11-02T10:39:04.890+00:00", "type": "websocket", "event": "disconnect", "endpoint": "/ws/chat", "connection_id": "54b44faffb01", "session_id": "demo-ws-drop", "close_code": 1006, "reason": "client_disconnected", "outcome": "ok"}
+{"timestamp": "2026-11-02T10:39:04.914+00:00", "type": "websocket", "event": "connect", "endpoint": "/ws/chat", "connection_id": "1e89361420e5", "session_id": "demo-ws-2", "outcome": "ok"}
+{"timestamp": "2026-11-02T10:39:05.107+00:00", "type": "websocket", "event": "message", "endpoint": "/ws/chat", "trace_id": "852a8d73bb434a4b81e95cd25e2ed683", "connection_id": "1e89361420e5", "session_id": "demo-ws-2", "outcome": "ok", "masked_question": "How long do I have to return shoes?", "response_status": "answered", "guardrails": {"pii_masked": {}, "injection_detected": false, "refused": false, "grounded": true, "rejected_order": false, "schema_valid": true}, "duration_ms": 191.44}
+{"timestamp": "2026-11-02T10:39:05.108+00:00", "type": "websocket", "event": "disconnect", "endpoint": "/ws/chat", "connection_id": "1e89361420e5", "session_id": "demo-ws-2", "close_code": 1000, "reason": "client_disconnected", "outcome": "ok"}
+
+OUTBOUND (non-loopback) NETWORK ATTEMPTS DURING THIS RUN: []

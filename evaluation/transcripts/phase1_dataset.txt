@@ -1,0 +1,25 @@
+﻿$ .venv\Scripts\python.exe data\dataset.py   # run 2026-11-01 23:45
+
+Seed: 42 | records: 50 | delay probability: 0.2
+Category weights: {'Beauty': 0.3, 'Apparel': 0.2, 'Footwear': 0.15, 'Home': 0.15, 'Electronics': 0.2}
+Status weights:   {'Delivered': 0.35, 'Shipped': 0.2, 'Placed': 0.15, 'Returned': 0.15, 'Refunded': 0.15}
+Amount ranges (INR): {'Beauty': (199, 4999), 'Apparel': (399, 5999), 'Footwear': (499, 7999), 'Home': (299, 9999), 'Electronics': (999, 24999)}
+
+Count per category (required >=3 each):
+  Apparel        9
+  Electronics   13
+  Home           6
+  Footwear      13
+  Beauty         9
+
+Count per status (required >=1 each):
+  Placed         3
+  Shipped        8
+  Delivered     24
+  Returned       4
+  Refunded      11
+
+delayed_shipment=True: 6/50 = 12.0% (required 10-30%)
+days_since_created range: 0-29 | order_value_inr range: 452-24917
+
+VALIDATION PASSED. Wrote 50 records to orders.json

@@ -1,0 +1,15 @@
+# Top-level pins (resolved together 2026-11-01). Full transitive lock: requirements.lock.txt
+crewai==1.15.33
+autogen-agentchat==0.7.5
+autogen-core==0.7.5
+autogen-ext==0.7.5
+chromadb==1.5.9
+sentence-transformers==6.2.0
+torch==2.15.0
+langchain-core==1.7.3
+fastapi==0.162.0
+uvicorn==0.54.0
+httpx==0.28.1
+pydantic==2.12.5
+python-dotenv==1.2.2
+pytest==9.2.0

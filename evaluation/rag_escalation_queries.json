@@ -1,0 +1,16 @@
+{
+  "_note": "Phase 7 remediation (E12) regression set, written and committed BEFORE the escalation routing code existed. It was written knowing the failure mode, so it is a regression check, not an unbiased test. expected_route: the metadata topic the query should be restricted to, or null for plain dense retrieval. relevant_doc_ids: the top-1 retrieved document must be one of these, in both collections.",
+  "queries": [
+    {"id": "X1", "query": "My complaint has been unresolved for three days. Who can I escalate it to?", "expected_route": "escalation_matrix", "relevant_doc_ids": ["KB-12"]},
+    {"id": "X2", "query": "How do I contact the grievance officer?", "expected_route": "escalation_matrix", "relevant_doc_ids": ["KB-12"]},
+    {"id": "X3", "query": "Can I speak to a senior specialist about my order?", "expected_route": "escalation_matrix", "relevant_doc_ids": ["KB-12"]},
+    {"id": "G1", "query": "What is your escalation process?", "expected_route": "escalation_matrix", "relevant_doc_ids": ["KB-12"]},
+    {"id": "G2", "query": "My order ORD-1045 was delayed. Will my case be escalated?", "expected_route": "escalation_matrix", "relevant_doc_ids": ["KB-12"]},
+    {"id": "D1", "query": "My parcel arrived damaged. How do I raise a claim?", "expected_route": null, "relevant_doc_ids": ["KB-10"]},
+    {"id": "D2", "query": "The lipstick I received has expired. What should I do?", "expected_route": null, "relevant_doc_ids": ["KB-10"]},
+    {"id": "D3", "query": "My damaged-item claim was rejected. Can I escalate it?", "expected_route": null, "relevant_doc_ids": ["KB-10", "KB-12"]},
+    {"id": "N1", "query": "How long does delivery take to a metro city?", "expected_route": null, "relevant_doc_ids": ["KB-03"]},
+    {"id": "N2", "query": "Can I return shoes I bought last week?", "expected_route": null, "relevant_doc_ids": ["KB-01"]},
+    {"id": "N3", "query": "What happens to my loyalty points if I cancel my order?", "expected_route": null, "relevant_doc_ids": ["KB-06", "KB-07"]}
+  ]
+}

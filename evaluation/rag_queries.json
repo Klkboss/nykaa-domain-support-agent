@@ -1,0 +1,28 @@
+{
+  "_note": "Written BEFORE any retrieval was run (Phase 3). The calibration and evaluation sets do not overlap, so the threshold is not tuned on the queries it is later demonstrated on. relevant_doc_ids = documents whose text contains information needed to answer the query.",
+  "calibration": {
+    "in_scope": [
+      {"query": "How long does delivery take to a metro city?", "expected_doc_id": "KB-03"},
+      {"query": "Can a courier collect a heavy bedsheet set I want to return?", "expected_doc_id": "KB-04"},
+      {"query": "How do I reach a senior support specialist about an unresolved complaint?", "expected_doc_id": "KB-12"},
+      {"query": "Can I swap a dress for a smaller size?", "expected_doc_id": "KB-09"},
+      {"query": "When do my loyalty points expire?", "expected_doc_id": "KB-07"}
+    ],
+    "out_of_scope": [
+      {"query": "What is the capital of France?"},
+      {"query": "Give me a recipe for chocolate chip cookies."},
+      {"query": "Who won the 2011 Cricket World Cup?"},
+      {"query": "How do I fix a flat bicycle tyre?"},
+      {"query": "What will the weather be like in Mumbai tomorrow?"}
+    ]
+  },
+  "evaluation": [
+    {"id": "Q1", "query": "How many days do I have to return a lipstick I haven't opened?", "relevant_doc_ids": ["KB-01"]},
+    {"id": "Q2", "query": "I paid cash on delivery and returned the item; when will I get my refund?", "relevant_doc_ids": ["KB-02"]},
+    {"id": "Q3", "query": "My hair dryer stopped working after three months. Is it covered?", "relevant_doc_ids": ["KB-05"]},
+    {"id": "Q4", "query": "My order has already shipped. Can I still cancel it, and what happens to the loyalty points I used?", "relevant_doc_ids": ["KB-06", "KB-07"]},
+    {"id": "Q5", "query": "Can you ship sneakers to Singapore, and who pays the customs duty?", "relevant_doc_ids": ["KB-11"]},
+    {"id": "Q6", "query": "My payment failed but the money was deducted from my account. What should I do?", "relevant_doc_ids": ["KB-08"]}
+  ],
+  "out_of_scope_demo": {"query": "What is the best way to train for a marathon?"}
+}

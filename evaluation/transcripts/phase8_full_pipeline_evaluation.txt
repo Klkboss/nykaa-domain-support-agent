@@ -1,0 +1,21 @@
+$ .venv\Scripts\python.exe scripts\run_phase8_evaluation.py -   # socket guard active (tests/conftest.py); run 2026-11-05. Full-pipeline evaluation (CrewAI + AutoGen + final check), same 15 frozen queries.
+
+E01  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-01): Apparel can be returned 
+E02  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-02): Alternatively, a COD ref
+E03  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-03): Domestic orders to metro
+E04  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information: A free reverse pickup can be requested f
+E05  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-05): Electronics come with a 
+E06  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-06): Once an order is Shipped
+E07  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-07): Each point is worth ₹1 a
+E08  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-08): Once all 3 retries have 
+E09  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-09): Size exchanges are offer
+E10  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-10): Items that arrive damage
+E11  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-11): International delivery i
+E12  answered        autogen=True  approved=True  final_check=True same_as_r2=True  Policy information (source: KB-12): Cases still unresolved a
+E13  fallback        autogen=False approved=-     final_check=True same_as_r2=True  I don't have sufficient information in my knowledge base to 
+E14  blocked         autogen=False approved=-     final_check=n/a same_as_r2=True  I can only help with Nykaa orders and policies. Your message
+E15  answered        autogen=False approved=-     final_check=True same_as_r2=True  Order information: No order found with record_id ORD-9999. N
+AVERAGES: {'v1': {'accuracy': 4.7333, 'grounding': 5, 'completeness': 5, 'safety': 5}, 'v3': {'accuracy': 5, 'grounding': 5, 'completeness': 5, 'safety': 5}}
+ORIGINAL AND r1 FILES SHA-256 unchanged: {'evaluation/evaluation_results.json': '52952c90b5456b1c16af4f9188e65a85c99a5c94aa58c707435d388ef33d48ef', 'evaluation/EVALUATION_REPORT.md': '40e60a1f54e37e3c64344813b966d44a593701888f713f288b85b1cdbcd573bd', 'evaluation/test_queries.json': '3699ac04647a6b552c8432caae2fe134aa45ad472551ad771dba77c14fdd7565', 'evaluation/remediation/evaluation_results_r1_rubric_v1.json': 'bdf4535e3a1fceb5e4f0b1cc6a5588fa8156cd92f0114afd8dd3ba908e225592', 'evaluation/remediation/evaluation_results_r1_rubric_v2.json': 'b2205cfa07630437977176340444be168706ddb0d989cd4c9c8eb4a9999366d6', 'evaluation/remediation/evaluation_results_r1_rubric_v3.json': '685c730f1faeead88fc75a9d6379f5d636aeb5b41991b6aa8c804532f001c51b', 'evaluation/remediation/EVALUATION_REPORT_REMEDIATION.md': 'b0f4720853adaaf7c865262c08f1b772c8235d1ac83fcad8103d2399134cf13b'}
+
+OUTBOUND NETWORK ATTEMPTS DURING THIS RUN (socket guard): []

@@ -1,0 +1,1509 @@
+﻿$ .venv\Scripts\python.exe -c "import tests.conftest as guard; runpy.run_path('scripts/run_crew_demo.py')"   # socket guard active; run 2026-11-02 12:26
+
+
+##############################################################################
+# Demo A: policy retrieval
+# Customer question: How long do I have to return shoes?
+##############################################################################
+┌───────────────────────── 🚀 Crew Execution Started ─────────────────────────┐
+│                                                                             │
+│  Crew Execution Started                                                     │
+│  Name: crew                                                                 │
+│  ID: 26a0edc2-5668-4f0d-a5a9-ced2b6b2fb51                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: How long do I have to return shoes?               │
+│  Search the policy knowledge base for this question.                        │
+│  ID: 7d1053af-c79e-4f77-a259-63c8a4dcf204                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Task: Customer question: How long do I have to return shoes?               │
+│  Search the policy knowledge base for this question.                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#1) ───────────────────────┐
+│                                                                             │
+│  Tool: rag_lookup                                                           │
+│  Args: {"query": "How long do I have to return shoes?"}                     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#1) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: rag_lookup                                                           │
+│  Output: {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can   │
+│  be returned within 30 days of delivery if it is unworn and sent back in    │
+│  its original shoebox.", "sources": ["KB-01"], "top_similarity": 0.5517,    │
+│  "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01", "doc_id":  │
+│  "KB-01", "similarity": 0.5517, "text": "provided it is unworn, unwashed    │
+│  and has all tags attached. Footwear can be returned within 30 days of      │
+│  delivery if it is unworn and sent back in its original shoebox. Home       │
+│  items such as bedding, decor and kitchenware can be"}, {"chunk_id":        │
+│  "KB-01::fixed::00", "doc_id": "KB-01", "similarity": 0.5185, "text":       │
+│  "Beauty products can be returned within 15 days of delivery only if they   │
+│  are unopened and the original seal is intact. Apparel can be returned      │
+│  within 30 days of delivery provided it is unworn, unwashed and has all     │
+│  tags attached."}, {"chunk_id": "KB-01::fixed::02", "doc_id": "KB-01",      │
+│  "similarity": 0.5009, "text": "Home items such as bedding, decor and       │
+│  kitchenware can be returned within 10 days of delivery in their original   │
+│  packaging. Electronics such as hair dryers, straighteners and trimmers     │
+│  can be returned within 7 days of delivery only for a manufacturing"}]}     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[35m[Finalize] todos_count=0, todos_with_results=0[0m
+┌──────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can be        │
+│  returned within 30 days of delivery if it is unworn and sent back in its   │
+│  original shoebox.", "sources": ["KB-01"], "top_similarity": 0.5517,        │
+│  "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01", "doc_id":  │
+│  "KB-01", "similarity": 0.5517, "text": "provided it is unworn, unwashed    │
+│  and has all tags attached. Footwear can be returned within 30 days of      │
+│  delivery if it is unworn and sent back in its original shoebox. Home       │
+│  items such as bedding, decor and kitchenware can be"}, {"chunk_id":        │
+│  "KB-01::fixed::00", "doc_id": "KB-01", "similarity": 0.5185, "text":       │
+│  "Beauty products can be returned within 15 days of delivery only if they   │
+│  are unopened and the original seal is intact. Apparel can be returned      │
+│  within 30 days of delivery provided it is unworn, unwashed and has all     │
+│  tags attached."}, {"chunk_id": "KB-01::fixed::02", "doc_id": "KB-01",      │
+│  "similarity": 0.5009, "text": "Home items such as bedding, decor and       │
+│  kitchenware can be returned within 10 days of delivery in their original   │
+│  packaging. Electronics such as hair dryers, straighteners and trimmers     │
+│  can be returned within 7 days of delivery only for a manufacturing"}]}     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can be        │
+│  returned within 30 days of delivery if it is unworn and sent back in its   │
+│  original shoebox.", "sources": ["KB-01"], "top_similarity": 0.5517,        │
+│  "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01", "doc_id":  │
+│  "KB-01", "similarity": 0.5517, "text": "provided it is unworn, unwashed    │
+│  and has all tags attached. Footwear can be returned within 30 days of      │
+│  delivery if it is unworn and sent back in its original shoebox. Home       │
+│  items such as bedding, decor and kitchenware can be"}, {"chunk_id":        │
+│  "KB-01::fixed::00", "doc_id": "KB-01", "similarity": 0.5185, "text":       │
+│  "Beauty products can be returned within 15 days of delivery only if they   │
+│  are unopened and the original seal is intact. Apparel can be returned      │
+│  within 30 days of delivery provided it is unworn, unwashed and has all     │
+│  tags attached."}, {"chunk_id": "KB-01::fixed::02", "doc_id": "KB-01",      │
+│  "similarity": 0.5009, "text": "Home items such as bedding, decor and       │
+│  kitchenware can be returned within 10 days of delivery in their original   │
+│  packaging. Electronics such as hair dryers, straighteners and trimmers     │
+│  can be returned within 7 days of delivery only for a manufacturing"}]}     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: How long do I have to return shoes?               │
+│  Search the policy knowledge base for this question.                        │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: How long do I have to return shoes?               │
+│  If the question names an order id, look that order up.                     │
+│  ID: 8fa62912-8fa7-433a-b63a-f1fe767a928b                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Task: Customer question: How long do I have to return shoes?               │
+│  If the question names an order id, look that order up.                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[35m[Finalize] todos_count=0, todos_with_results=0[0m
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Final Answer:                                                              │
+│  No order lookup needed: the question does not refer to a specific order.   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: How long do I have to return shoes?               │
+│  If the question names an order id, look that order up.                     │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: How long do I have to return shoes?               │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  ID: f2883904-1206-4659-85f7-df5a972674c5                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Task: Customer question: How long do I have to return shoes?               │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[35m[Finalize] todos_count=0, todos_with_results=0[0m
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Final Answer:                                                              │
+│  Policy information (source: KB-01): Footwear can be returned within 30     │
+│  days of delivery if it is unworn and sent back in its original shoebox.    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: How long do I have to return shoes?               │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── Crew Completion ──────────────────────────────┐
+│                                                                             │
+│  Crew Execution Completed                                                   │
+│  Name: crew                                                                 │
+│  ID: 26a0edc2-5668-4f0d-a5a9-ced2b6b2fb51                                   │
+│  Final Output: Policy information (source: KB-01): Footwear can be          │
+│  returned within 30 days of delivery if it is unworn and sent back in its   │
+│  original shoebox.                                                          │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+--- Demo A: policy retrieval: execution summary ---
+rag_lookup invocations:         [{'query': 'How long do I have to return shoes?'}]
+check_order_status invocations: []
+LLM calls per agent:            {'retrieval': 2, 'lookup': 1, 'composer': 1}
+[retrieval task output] {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.", "sources": ["KB-01"], "top_similarity": 0.5517, "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01", "doc_id": "KB-01", "similarity": 0.5517, "text": "provided it is unworn, unwashed and has all tags attached. Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox. Home items such as bedding, decor and kitchenware can be"}, {"chunk_id": "KB-01::fixed::00", "doc_id": "KB-01", "similarity": 0.5185, "text": "Beauty products can be returned within 15 days of delivery only if they are unopened and the original seal is intact. Apparel can be returned within 30 days of delivery provided it is unworn, unwashed and has all tags attached."}, {"chunk_id": "KB-01::fixed::02", "doc_id": "KB-01", "similarity": 0.5009, "text": "Home items such as bedding, decor and kitchenware can be returned within 10 days of delivery in their original packaging. Electronics such as hair dryers, straighteners and trimmers can be returned within 7 days of delivery only for a manufacturing"}]}
+[lookup task output] No order lookup needed: the question does not refer to a specific order.
+[composer task output] Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+FINAL DRAFT:
+Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+
+##############################################################################
+# Demo B: order lookup
+# Customer question: What is the status of my order ORD-1016?
+##############################################################################
+┌───────────────────────── 🚀 Crew Execution Started ─────────────────────────┐
+│                                                                             │
+│  Crew Execution Started                                                     │
+│  Name: crew                                                                 │
+│  ID: 41fb25ab-d88a-4a4a-8f49-2bfe03252f7f                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: What is the status of my order ORD-1016?          │
+│  Search the policy knowledge base for this question.                        │
+│  ID: 3bb8868f-e7bc-42b2-afbb-c2b2cc6586a5                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Task: Customer question: What is the status of my order ORD-1016?          │
+│  Search the policy knowledge base for this question.                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#2) ───────────────────────┐
+│                                                                             │
+│  Tool: rag_lookup                                                           │
+│  Args: {"query": "What is the status of my order ORD-1016?"}                │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#2) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: rag_lookup                                                           │
+│  Output: {"tool": "rag_lookup", "grounded": true, "answer": "specialist,    │
+│  if it is unresolved after 24 hours, if the order value is above            │
+│  \u20b910,000, or if the order is flagged as a delayed shipment with a      │
+│  high escalation score.", "sources": ["KB-12"], "top_similarity": 0.4044,   │
+│  "threshold": 0.33, "context": [{"chunk_id": "KB-12::fixed::01", "doc_id":  │
+│  "KB-12", "similarity": 0.4044, "text": "specialist, if it is unresolved    │
+│  after 24 hours, if the order value is above \u20b910,000, or if the order  │
+│  is flagged as a delayed shipment with a high escalation score. Level 2     │
+│  specialists respond within 4 business hours and aim"}]}                    │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │[35m[Finalize] todos_count=0, todos_with_results=0[0m
+
+│  {"tool": "rag_lookup", "grounded": true, "answer": "specialist, if it is   │
+│  unresolved after 24 hours, if the order value is above \u20b910,000, or    │
+│  if the order is flagged as a delayed shipment with a high escalation       │
+│  score.", "sources": ["KB-12"], "top_similarity": 0.4044, "threshold":      │
+│  0.33, "context": [{"chunk_id": "KB-12::fixed::01", "doc_id": "KB-12",      │
+│  "similarity": 0.4044, "text": "specialist, if it is unresolved after 24    │
+│  hours, if the order value is above \u20b910,000, or if the order is        │
+│  flagged as a delayed shipment with a high escalation score. Level 2        │
+│  specialists respond within 4 business hours and aim"}]}                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "specialist, if it is   │
+│  unresolved after 24 hours, if the order value is above \u20b910,000, or    │
+│  if the order is flagged as a delayed shipment with a high escalation       │
+│  score.", "sources": ["KB-12"], "top_similarity": 0.4044, "threshold":      │
+│  0.33, "context": [{"chunk_id": "KB-12::fixed::01", "doc_id": "KB-12",      │
+│  "similarity": 0.4044, "text": "specialist, if it is unresolved after 24    │
+│  hours, if the order value is above \u20b910,000, or if the order is        │
+│  flagged as a delayed shipment with a high escalation score. Level 2        │
+│  specialists respond within 4 business hours and aim"}]}                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: What is the status of my order ORD-1016?          │
+│  Search the policy knowledge base for this question.                        │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: What is the status of my order ORD-1016?          │
+│  If the question names an order id, look that order up.                     │
+│  ID: d13ed346-a1d4-482c-93c5-9408b2b4bfdf                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Task: Customer question: What is the status of my order ORD-1016?          │
+│  If the question names an order id, look that order up.                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#1) ───────────────────────┐
+│                                                                             │
+│  Tool: check_order_status                                                   │
+│  Args: {"record_id": "ORD-1016"}                                            │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#1) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: check_order_status                                                   │
+│  Output: {"tool": "check_order_status", "record_id": "ORD-1016", "status":  │
+│  "Returned", "order_value_inr": 8504, "escalation_score": 0.9467,           │
+│  "escalation_recommended": true, "escalation_threshold": 0.78}              │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │
+│  {"tool": "check_order_status", "record_id": "ORD-1016", "status":          │
+│  "Returned", "order_value_inr": 8504, "escalation_score": 0.9467,           │
+│  "escalation_recommended": true, "escalation_threshold": 0.78}              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+[35m[Finalize] todos_count=0, todos_with_results=0[0m
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "check_order_status", "record_id": "ORD-1016", "status":          │
+│  "Returned", "order_value_inr": 8504, "escalation_score": 0.9467,           │
+│  "escalation_recommended": true, "escalation_threshold": 0.78}              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: What is the status of my order ORD-1016?          │
+│  If the question names an order id, look that order up.                     │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: What is the status of my order ORD-1016?          │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  ID: 715cfa13-6d26-4430-bf3f-47407222ccfc                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Task: Customer question: What is the status of my order ORD-1016?          │
+│  Write one draft reply that combines the policy findings and the order      [35m[Finalize] todos_count=0, todos_with_results=0[0m
+│
+│  facts from your context. Keep policy and order information separate.       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Final Answer:                                                              │
+│  Order information (ORD-1016): status Returned, order value ₹8,504.         │
+│  Escalation score 0.9467 (threshold 0.78) meets the escalation threshold,   │
+│  so this case is flagged for escalation.                                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: What is the status of my order ORD-1016?          │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── Crew Completion ──────────────────────────────┐
+│                                                                             │
+│  Crew Execution Completed                                                   │
+│  Name: crew                                                                 │
+│  ID: 41fb25ab-d88a-4a4a-8f49-2bfe03252f7f                                   │
+│  Final Output: Order information (ORD-1016): status Returned, order value   │
+│  ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation      │
+│  threshold, so this case is flagged for escalation.                         │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+--- Demo B: order lookup: execution summary ---
+rag_lookup invocations:         [{'query': 'What is the status of my order ORD-1016?'}]
+check_order_status invocations: [{'record_id': 'ORD-1016'}]
+LLM calls per agent:            {'retrieval': 2, 'lookup': 2, 'composer': 1}
+[retrieval task output] {"tool": "rag_lookup", "grounded": true, "answer": "specialist, if it is unresolved after 24 hours, if the order value is above \u20b910,000, or if the order is flagged as a delayed shipment with a high escalation score.", "sources": ["KB-12"], "top_similarity": 0.4044, "threshold": 0.33, "context": [{"chunk_id": "KB-12::fixed::01", "doc_id": "KB-12", "similarity": 0.4044, "text": "specialist, if it is unresolved after 24 hours, if the order value is above \u20b910,000, or if the order is flagged as a delayed shipment with a high escalation score. Level 2 specialists respond within 4 business hours and aim"}]}
+[lookup task output] {"tool": "check_order_status", "record_id": "ORD-1016", "status": "Returned", "order_value_inr": 8504, "escalation_score": 0.9467, "escalation_recommended": true, "escalation_threshold": 0.78}
+[composer task output] Order information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation.
+FINAL DRAFT:
+Order information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation.
+
+##############################################################################
+# Demo C: combined policy + order
+# Customer question: My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?
+##############################################################################
+┌───────────────────────── 🚀 Crew Execution Started ─────────────────────────┐
+│                                                                             │
+│  Crew Execution Started                                                     │
+│  Name: crew                                                                 │
+│  ID: 31864bcc-2e6f-4f8c-becc-e80f7444e914                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  Search the policy knowledge base for this question.                        │
+│  ID: e9ab210f-398a-42c6-bed7-4a4d201c081e                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Task: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  Search the policy knowledge base for this question.                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#3) ───────────────────────┐
+│                                                                             │
+│  Tool: rag_lookup                                                           │
+│  Args: {"query": "My order ORD-1029 arrived late. Can I still return the    │
+│  shoes, and is my case being escalated?"}                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#3) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: rag_lookup                                                           │
+│  Output: {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can   │
+│  be returned within 30 days of delivery if it is unworn and sent back in    │
+│  its original shoebox.", "sources": ["KB-01", "KB-12"], "top_similarity":   │
+│  0.4239, "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01",    │
+│  "doc_id": "KB-01", "similarity": 0.4239, "text": "provided it is unworn,   │
+│  unwashed and has all tags attached. Footwear can be returned within 30     │
+│  days of delivery if it is unworn and sent back in its original shoebox.    │
+│  Home items such as bedding, decor and kitchenware can be"}, {"chunk_id":   │
+│  "KB-12::fixed::03", "doc_id": "KB-12", "similarity": 0.3989, "text": "are  │
+│  escalated to Level 3, the grievance officer, who responds within 2         │
+│  business days. Customers are told their case reference number and current  │
+│  escalation level at every handover."}, {"chunk_id": "KB-01::fixed::02",    │
+│  "doc_id": "KB-01", "similarity": 0.3919, "text": "Home items such as       │
+│  bedding, decor and kitchenware can be returned within 10 days of delivery  │
+│  in their original packaging. Electronics such as hair dryers,              │
+│  straighteners and trimmers can be returned within 7 days of delivery only  │
+│  for a manufacturing"}]}                                                    │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can be [35m[Finalize] todos_count=0, todos_with_results=0[0m
+       │
+│  returned within 30 days of delivery if it is unworn and sent back in its   │
+│  original shoebox.", "sources": ["KB-01", "KB-12"], "top_similarity":       │
+│  0.4239, "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01",    │
+│  "doc_id": "KB-01", "similarity": 0.4239, "text": "provided it is unworn,   │
+│  unwashed and has all tags attached. Footwear can be returned within 30     │
+│  days of delivery if it is unworn and sent back in its original shoebox.    │
+│  Home items such as bedding, decor and kitchenware can be"}, {"chunk_id":   │
+│  "KB-12::fixed::03", "doc_id": "KB-12", "similarity": 0.3989, "text": "are  │
+│  escalated to Level 3, the grievance officer, who responds within 2         │
+│  business days. Customers are told their case reference number and current  │
+│  escalation level at every handover."}, {"chunk_id": "KB-01::fixed::02",    │
+│  "doc_id": "KB-01", "similarity": 0.3919, "text": "Home items such as       │
+│  bedding, decor and kitchenware can be returned within 10 days of delivery  │
+│  in their original packaging. Electronics such as hair dryers,              │
+│  straighteners and trimmers can be returned within 7 days of delivery only  │
+│  for a manufacturing"}]}                                                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can be        │
+│  returned within 30 days of delivery if it is unworn and sent back in its   │
+│  original shoebox.", "sources": ["KB-01", "KB-12"], "top_similarity":       │
+│  0.4239, "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01",    │
+│  "doc_id": "KB-01", "similarity": 0.4239, "text": "provided it is unworn,   │
+│  unwashed and has all tags attached. Footwear can be returned within 30     │
+│  days of delivery if it is unworn and sent back in its original shoebox.    │
+│  Home items such as bedding, decor and kitchenware can be"}, {"chunk_id":   │
+│  "KB-12::fixed::03", "doc_id": "KB-12", "similarity": 0.3989, "text": "are  │
+│  escalated to Level 3, the grievance officer, who responds within 2         │
+│  business days. Customers are told their case reference number and current  │
+│  escalation level at every handover."}, {"chunk_id": "KB-01::fixed::02",    │
+│  "doc_id": "KB-01", "similarity": 0.3919, "text": "Home items such as       │
+│  bedding, decor and kitchenware can be returned within 10 days of delivery  │
+│  in their original packaging. Electronics such as hair dryers,              │
+│  straighteners and trimmers can be returned within 7 days of delivery only  │
+│  for a manufacturing"}]}                                                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  Search the policy knowledge base for this question.                        │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  If the question names an order id, look that order up.                     │
+│  ID: cedf050f-fae5-4f28-bb4c-63a762f55c3f                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Task: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  If the question names an order id, look that order up.                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#2) ───────────────────────┐
+│                                                                             │
+│  Tool: check_order_status                                                   │
+│  Args: {"record_id": "ORD-1029"}                                            │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#2) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: check_order_status                                                   │
+│  Output: {"tool": "check_order_status", "record_id": "ORD-1029", "status":  │
+│  "Delivered", "order_value_inr": 3562, "escalation_score": 0.92,            │
+│  "escalation_recommended": true, "escalation_threshold": 0.78}              │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────── Tool Output [35m[Finalize] todos_count=0, todos_with_results=0[0m
+────────────────────────────────┐
+│                                                                             │
+│  {"tool": "check_order_status", "record_id": "ORD-1029", "status":          │
+│  "Delivered", "order_value_inr": 3562, "escalation_score": 0.92,            │
+│  "escalation_recommended": true, "escalation_threshold": 0.78}              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "check_order_status", "record_id": "ORD-1029", "status":          │
+│  "Delivered", "order_value_inr": 3562, "escalation_score": 0.92,            │
+│  "escalation_recommended": true, "escalation_threshold": 0.78}              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  If the question names an order id, look that order up.                     │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  ID: 112c653c-6f97-4db4-a2d2-67c9bf22714d                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Task: Customer question: My order ORD-1029 arrived late. Can I still       │[35m[Finalize] todos_count=0, todos_with_results=0[0m
+
+│  return the shoes, and is my case being escalated?                          │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Final Answer:                                                              │
+│  Policy information (source: KB-01, KB-12): Footwear can be returned        │
+│  within 30 days of delivery if it is unworn and sent back in its original   │
+│  shoebox.                                                                   │
+│  Order information (ORD-1029): status Delivered, order value ₹3,562.        │
+│  Escalation score 0.92 (threshold 0.78) meets the escalation threshold, so  │
+│  this case is flagged for escalation.                                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: My order ORD-1029 arrived late. Can I still       │
+│  return the shoes, and is my case being escalated?                          │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── Crew Completion ──────────────────────────────┐
+│                                                                             │
+│  Crew Execution Completed                                                   │
+│  Name: crew                                                                 │
+│  ID: 31864bcc-2e6f-4f8c-becc-e80f7444e914                                   │
+│  Final Output: Policy information (source: KB-01, KB-12): Footwear can be   │
+│  returned within 30 days of delivery if it is unworn and sent back in its   │
+│  original shoebox.                                                          │
+│  Order information (ORD-1029): status Delivered, order value ₹3,562.        │
+│  Escalation score 0.92 (threshold 0.78) meets the escalation threshold, so  │
+│  this case is flagged for escalation.                                       │
+│                                                                             │
+
+--- Demo C: combined policy + order: execution summary ---
+rag_lookup invocations:         [{'query': 'My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?'}]
+check_order_status invocations: [{'record_id': 'ORD-1029'}]
+LLM calls per agent:            {'retrieval': 2, 'lookup': 2, 'composer': 1}
+[retrieval task output] {"tool": "rag_lookup", "grounded": true, "answer": "Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.", "sources": ["KB-01", "KB-12"], "top_similarity": 0.4239, "threshold": 0.33, "context": [{"chunk_id": "KB-01::fixed::01", "doc_id": "KB-01", "similarity": 0.4239, "text": "provided it is unworn, unwashed and has all tags attached. Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox. Home items such as bedding, decor and kitchenware can be"}, {"chunk_id": "KB-12::fixed::03", "doc_id": "KB-12", "similarity": 0.3989, "text": "are escalated to Level 3, the grievance officer, who responds within 2 business days. Customers are told their case reference number and current escalation level at every handover."}, {"chunk_id": "KB-01::fixed::02", "doc_id": "KB-01", "similarity": 0.3919, "text": "Home items such as bedding, decor and kitchenware can be returned within 10 days of delivery in their original packaging. Electronics such as hair dryers, straighteners and trimmers can be returned within 7 days of delivery only for a manufacturing"}]}
+[lookup task output] {"tool": "check_order_status", "record_id": "ORD-1029", "status": "Delivered", "order_value_inr": 3562, "escalation_score": 0.92, "escalation_recommended": true, "escalation_threshold": 0.78}
+[composer task output] Policy information (source: KB-01, KB-12): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+Order information (ORD-1029): status Delivered, order value ₹3,562. Escalation score 0.92 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation.
+FINAL DRAFT:
+Policy information (source: KB-01, KB-12): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+Order information (ORD-1029): status Delivered, order value ₹3,562. Escalation score 0.92 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation.
+
+##############################################################################
+# Edge: unknown order
+# Customer question: Where is my order ORD-9999?
+##############################################################################
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────── 🚀 Crew Execution Started ─────────────────────────┐
+│                                                                             │
+│  Crew Execution Started                                                     │
+│  Name: crew                                                                 │
+│  ID: ee4eb0f0-a505-492f-a23b-8dcb5bcceeb8                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: Where is my order ORD-9999?                       │
+│  Search the policy knowledge base for this question.                        │
+│  ID: ea2d3aac-dc5e-4c59-9dac-3b384f200002                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Task: Customer question: Where is my order ORD-9999?                       │
+│  Search the policy knowledge base for this question.                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#4) ───────────────────────┐
+│                                                                             │
+│  Tool: rag_lookup                                                           │
+│  Args: {"query": "Where is my order ORD-9999?"}                             │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#4) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: rag_lookup                                                           │
+│  Output: {"tool": "rag_lookup", "grounded": true, "answer": "orders up to   │
+│  \u20b910,000 and only at pin codes where it is offered.", "sources":       │
+│  ["KB-08", "KB-11"], "top_similarity": 0.4005, "threshold": 0.33,           │
+│  "context": [{"chunk_id": "KB-08::fixed::03", "doc_id": "KB-08",            │
+│  "similarity": 0.4005, "text": "orders up to \u20b910,000 and only at pin   │
+│  codes where it is offered."}, {"chunk_id": "KB-11::fixed::02", "doc_id":   │
+│  "KB-11", "similarity": 0.3502, "text": "not available, and any customs     │
+│  duty is paid by the customer. International orders cannot be returned or   │
+│  exchanged, but damaged-item claims are still accepted within 48 hours of   │
+[35m[Finalize] todos_count=0, todos_with_results=0[0m
+│  delivery."}]}                                                              │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "orders up to           │
+│  \u20b910,000 and only at pin codes where it is offered.", "sources":       │
+│  ["KB-08", "KB-11"], "top_similarity": 0.4005, "threshold": 0.33,           │
+│  "context": [{"chunk_id": "KB-08::fixed::03", "doc_id": "KB-08",            │
+│  "similarity": 0.4005, "text": "orders up to \u20b910,000 and only at pin   │
+│  codes where it is offered."}, {"chunk_id": "KB-11::fixed::02", "doc_id":   │
+│  "KB-11", "similarity": 0.3502, "text": "not available, and any customs     │
+│  duty is paid by the customer. International orders cannot be returned or   │
+│  exchanged, but damaged-item claims are still accepted within 48 hours of   │
+│  delivery."}]}                                                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "orders up to           │
+│  \u20b910,000 and only at pin codes where it is offered.", "sources":       │
+│  ["KB-08", "KB-11"], "top_similarity": 0.4005, "threshold": 0.33,           │
+│  "context": [{"chunk_id": "KB-08::fixed::03", "doc_id": "KB-08",            │
+│  "similarity": 0.4005, "text": "orders up to \u20b910,000 and only at pin   │
+│  codes where it is offered."}, {"chunk_id": "KB-11::fixed::02", "doc_id":   │
+│  "KB-11", "similarity": 0.3502, "text": "not available, and any customs     │
+│  duty is paid by the customer. International orders cannot be returned or   │
+│  exchanged, but damaged-item claims are still accepted within 48 hours of   │
+│  delivery."}]}                                                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: Where is my order ORD-9999?                       │
+│  Search the policy knowledge base for this question.                        │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: Where is my order ORD-9999?                       │
+│  If the question names an order id, look that order up.                     │
+│  ID: d826f61e-7f4c-4452-b524-724b8f975174                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Task: Customer question: Where is my order ORD-9999?                       │
+│  If the question names an order id, look that order up.                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#3) ───────────────────────┐
+│                                                                             │
+│  Tool: check_order_status                                                   │
+│  Args: {"record_id": "ORD-9999"}                                            │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#3) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: check_order_status                                                   │
+│  Output: {"tool": "check_order_status", "error": "No order found with       │
+│  record_id ORD-9999"}                                                       │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌─[35m[Finalize] todos_count=0, todos_with_results=0[0m
+─────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │
+│  {"tool": "check_order_status", "error": "No order found with record_id     │
+│  ORD-9999"}                                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "check_order_status", "error": "No order found with record_id     │
+│  ORD-9999"}                                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: Where is my order ORD-9999?                       │
+│  If the question names an order id, look that order up.                     │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: Where is my order ORD-9999?                       │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  ID: ebcd1446-5244-4046-a132-7fe591df05c1                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Task: Customer question: Where is my order ORD-9999?                       │
+[35m[Finalize] todos_count=0, todos_with_results=0[0m
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Final Answer:                                                              │
+│  Order information: No order found with record_id ORD-9999. No order        │
+│  details have been assumed.                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: Where is my order ORD-9999?                       │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── Crew Completion ──────────────────────────────┐
+│                                                                             │
+│  Crew Execution Completed                                                   │
+│  Name: crew                                                                 │
+│  ID: ee4eb0f0-a505-492f-a23b-8dcb5bcceeb8                                   │
+│  Final Output: Order information: No order found with record_id ORD-9999.   │
+│  No order details have been assumed.                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+--- Edge: unknown order: execution summary ---
+rag_lookup invocations:         [{'query': 'Where is my order ORD-9999?'}]
+check_order_status invocations: [{'record_id': 'ORD-9999'}]
+LLM calls per agent:            {'retrieval': 2, 'lookup': 2, 'composer': 1}
+[retrieval task output] {"tool": "rag_lookup", "grounded": true, "answer": "orders up to \u20b910,000 and only at pin codes where it is offered.", "sources": ["KB-08", "KB-11"], "top_similarity": 0.4005, "threshold": 0.33, "context": [{"chunk_id": "KB-08::fixed::03", "doc_id": "KB-08", "similarity": 0.4005, "text": "orders up to \u20b910,000 and only at pin codes where it is offered."}, {"chunk_id": "KB-11::fixed::02", "doc_id": "KB-11", "similarity": 0.3502, "text": "not available, and any customs duty is paid by the customer. International orders cannot be returned or exchanged, but damaged-item claims are still accepted within 48 hours of delivery."}]}
+[lookup task output] {"tool": "check_order_status", "error": "No order found with record_id ORD-9999"}
+[composer task output] Order information: No order found with record_id ORD-9999. No order details have been assumed.
+FINAL DRAFT:
+Order information: No order found with record_id ORD-9999. No order details have been assumed.
+
+##############################################################################
+# Edge: out-of-scope
+# Customer question: What is the best way to train for a marathon?
+##############################################################################
+┌───────────────────────── 🚀 Crew Execution Started ─────────────────────────┐
+│                                                                             │
+│  Crew Execution Started                                                     │
+│  Name: crew                                                                 │
+│  ID: 58995e4c-4829-4f9c-9654-f38d16e54ce5                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: What is the best way to train for a marathon?     │
+│  Search the policy knowledge base for this question.                        │
+│  ID: ed826e29-51dc-4c66-8d9a-888ed15d6f54                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Task: Customer question: What is the best way to train for a marathon?     │
+│  Search the policy knowledge base for this question.                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#5) ───────────────────────┐
+│                                                                             │
+│  Tool: rag_lookup                                                           │
+│  Args: {"query": "What is the best way to train for a marathon?"}           │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#5) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: rag_lookup                                                           │
+│  Output: {"tool": "rag_lookup", "grounded": false, "answer": "I don't have  │
+│  sufficient information in my knowledge base to answer that question.",     │
+│  "sources": [], "top_similarity": 0.0524, "threshold": 0.33, "context":     │
+│  []}                                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │
+│  {"tool": "rag_lookup", "grounded": false, "answer": "I don't have          │
+│  sufficient information in my knowledge base to answer that question.",     │
+│  "sources": [], "top_similarity": 0.0524, "threshold": 0.33, "context":     │
+│  []}                                                                      [35m[Finalize] todos_count=0, todos_with_results=0[0m
+  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "rag_lookup", "grounded": false, "answer": "I don't have          │
+│  sufficient information in my knowledge base to answer that question.",     │
+│  "sources": [], "top_similarity": 0.0524, "threshold": 0.33, "context":     │
+│  []}                                                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: What is the best way to train for a marathon?     │
+│  Search the policy knowledge base for this question.                        │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: What is the best way to train for a marathon?     │
+│  If the question names an order id, look that order up.                     │
+│  ID: 23016e9d-0149-46e0-8311-8efaf5510e99                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Task: Customer question: What is the best way to train for a marathon?     │
+│  If the question names an order id, look that order up.                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+[35m[Finalize] todos_count=0, todos_with_results=0[0m
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Final Answer:                                                              │
+│  No order lookup needed: the question does not refer to a specific order.   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: What is the best way to train for a marathon?     │
+│  If the question names an order id, look that order up.                     │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: What is the best way to train for a marathon?     │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  ID: 0c1dd716-6925-41b0-9b76-b90dcc4733a4                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Task: Customer question: What is the best way to train for a marathon?[35m[Finalize] todos_count=0, todos_with_results=0[0m
+     │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Final Answer:                                                              │
+│  I don't have sufficient information in my knowledge base to answer that    │
+│  question.                                                                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: What is the best way to train for a marathon?     │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── Crew Completion ──────────────────────────────┐
+│                                                                             │
+│  Crew Execution Completed                                                   │
+│  Name: crew                                                                 │
+│  ID: 58995e4c-4829-4f9c-9654-f38d16e54ce5                                   │
+│  Final Output: I don't have sufficient information in my knowledge base to  │
+│  answer that question.                                                      │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+--- Edge: out-of-scope: execution summary ---
+rag_lookup invocations:         [{'query': 'What is the best way to train for a marathon?'}]
+check_order_status invocations: []
+LLM calls per agent:            {'retrieval': 2, 'lookup': 1, 'composer': 1}
+[retrieval task output] {"tool": "rag_lookup", "grounded": false, "answer": "I don't have sufficient information in my knowledge base to answer that question.", "sources": [], "top_similarity": 0.0524, "threshold": 0.33, "context": []}
+[lookup task output] No order lookup needed: the question does not refer to a specific order.
+[composer task output] I don't have sufficient information in my knowledge base to answer that question.
+FINAL DRAFT:
+I don't have sufficient information in my knowledge base to answer that question.
+
+##############################################################################
+# Edge: order question without an id
+# Customer question: Can you check my order status?
+##############################################################################
+┌───────────────────────── 🚀 Crew Execution Started ─────────────────────────┐
+│                                                                             │
+│  Crew Execution Started                                                     │
+│  Name: crew                                                                 │
+│  ID: ab401fc1-42ee-4842-8f01-dbc94a941170                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: Can you check my order status?                    │
+│  Search the policy knowledge base for this question.                        │
+│  ID: ba5ce301-5ba4-45e3-8c30-89bbffc1d335                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Task: Customer question: Can you check my order status?                    │
+│  Search the policy knowledge base for this question.                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────── 🔧 Tool Execution Started (#6) ───────────────────────┐
+│                                                                             │
+│  Tool: rag_lookup                                                           │
+│  Args: {"query": "Can you check my order status?"}                          │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────── ✅ Tool Execution Completed (#6) ──────────────────────┐
+│                                                                             │
+│  Tool Completed                                                             │
+│  Tool: rag_lookup                                                           │
+│  Output: {"tool": "rag_lookup", "grounded": true, "answer": "An order       │
+│  counts as a delayed shipment when it has not been delivered by the         │
+│  promised date shown at checkout, and delayed orders are prioritised for    │
+│  proactive support. Items that arrive damaged, defective, expired or        │
+│  different from what was ordered must be reported through the Help Centre   │
+│  within 48 hours of delivery.", "sources": ["KB-11", "KB-03", "KB-10"],     │
+│  [35m[Finalize] todos_count=0, todos_with_results=0[0m
+"top_similarity": 0.4487, "threshold": 0.33, "context": [{"chunk_id":      │
+│  "KB-11::fixed::02", "doc_id": "KB-11", "similarity": 0.4487, "text": "not  │
+│  available, and any customs duty is paid by the customer. International     │
+│  orders cannot be returned or exchanged, but damaged-item claims are still  │
+│  accepted within 48 hours of delivery."}, {"chunk_id": "KB-03::fixed::03",  │
+│  "doc_id": "KB-03", "similarity": 0.4406, "text": "by surface transport.    │
+│  An order counts as a delayed shipment when it has not been delivered by    │
+│  the promised date shown at checkout, and delayed orders are prioritised    │
+│  for proactive support."}, {"chunk_id": "KB-10::fixed::00", "doc_id":       │
+│  "KB-10", "similarity": 0.4379, "text": "Items that arrive damaged,         │
+│  defective, expired or different from what was ordered must be reported     │
+│  through the Help Centre within 48 hours of delivery. The claim needs       │
+│  clear photos of the item, the outer packaging and the shipping label,      │
+│  and"}]}                                                                    │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────── Tool Output ────────────────────────────────┐
+│                                                                             │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "An order counts as a   │
+│  delayed shipment when it has not been delivered by the promised date       │
+│  shown at checkout, and delayed orders are prioritised for proactive        │
+│  support. Items that arrive damaged, defective, expired or different from   │
+│  what was ordered must be reported through the Help Centre within 48 hours  │
+│  of delivery.", "sources": ["KB-11", "KB-03", "KB-10"], "top_similarity":   │
+│  0.4487, "threshold": 0.33, "context": [{"chunk_id": "KB-11::fixed::02",    │
+│  "doc_id": "KB-11", "similarity": 0.4487, "text": "not available, and any   │
+│  customs duty is paid by the customer. International orders cannot be       │
+│  returned or exchanged, but damaged-item claims are still accepted within   │
+│  48 hours of delivery."}, {"chunk_id": "KB-03::fixed::03", "doc_id":        │
+│  "KB-03", "similarity": 0.4406, "text": "by surface transport. An order     │
+│  counts as a delayed shipment when it has not been delivered by the         │
+│  promised date shown at checkout, and delayed orders are prioritised for    │
+│  proactive support."}, {"chunk_id": "KB-10::fixed::00", "doc_id": "KB-10",  │
+│  "similarity": 0.4379, "text": "Items that arrive damaged, defective,       │
+│  expired or different from what was ordered must be reported through the    │
+│  Help Centre within 48 hours of delivery. The claim needs clear photos of   │
+│  the item, the outer packaging and the shipping label, and"}]}              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│  Final Answer:                                                              │
+│  {"tool": "rag_lookup", "grounded": true, "answer": "An order counts as a   │
+│  delayed shipment when it has not been delivered by the promised date       │
+│  shown at checkout, and delayed orders are prioritised for proactive        │
+│  support. Items that arrive damaged, defective, expired or different from   │
+│  what was ordered must be reported through the Help Centre within 48 hours  │
+│  of delivery.", "sources": ["KB-11", "KB-03", "KB-10"], "top_similarity":   │
+│  0.4487, "threshold": 0.33, "context": [{"chunk_id": "KB-11::fixed::02",    │
+│  "doc_id": "KB-11", "similarity": 0.4487, "text": "not available, and any   │
+│  customs duty is paid by the customer. International orders cannot be       │
+│  returned or exchanged, but damaged-item claims are still accepted within   │
+│  48 hours of delivery."}, {"chunk_id": "KB-03::fixed::03", "doc_id":        │
+│  "KB-03", "similarity": 0.4406, "text": "by surface transport. An order     │
+│  counts as a delayed shipment when it has not been delivered by the         │
+│  promised date shown at checkout, and delayed orders are prioritised for    │
+│  proactive support."}, {"chunk_id": "KB-10::fixed::00", "doc_id": "KB-10",  │
+│  "similarity": 0.4379, "text": "Items that arrive damaged, defective,       │
+│  expired or different from what was ordered must be reported through the    │
+│  Help Centre within 48 hours of delivery. The claim needs clear photos of   │
+│  the item, the outer packaging and the shipping label, and"}]}              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: Can you check my order status?                    │
+│  Search the policy knowledge base for this question.                        │
+│  Agent: Retrieval Agent                                                     │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: Can you check my order status?                    │
+│  If the question names an order id, look that order up.                     │
+│  ID: ad352998-fffd-4520-9aae-c55037ff6c70                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Task: Customer question: Can you check my order status?                    │
+│  If the question names an order id, look that order up.                     │
+│                                                                             │[35m[Finalize] todos_count=0, todos_with_results=0[0m
+
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│  Final Answer:                                                              │
+│  Please share your order ID (format ORD-1234) so I can check it.            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: Can you check my order status?                    │
+│  If the question names an order id, look that order up.                     │
+│  Agent: Lookup Agent                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── 📋 Task Started ──────────────────────────────┐
+│                                                                             │
+│  Task Started                                                               │
+│  Name: Customer question: Can you check my order status?                    │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  ID: 2a45837b-daba-436c-ac90-a6d6c893166e                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────── 🤖 Agent Started ──────────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Task: Customer question: Can you check my order status?                    │
+│  Write one draft reply that combines the policy findings and the order      │[35m[Finalize] todos_count=0, todos_with_results=0[0m
+
+│  facts from your context. Keep policy and order information separate.       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────── ✅ Agent Final Answer ───────────────────────────┐
+│                                                                             │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│  Final Answer:                                                              │
+│  Please share your order ID (format ORD-1234) so I can check it.            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────── 📋 Task Completion ─────────────────────────────┐
+│                                                                             │
+│  Task Completed                                                             │
+│  Name: Customer question: Can you check my order status?                    │
+│  Write one draft reply that combines the policy findings and the order      │
+│  facts from your context. Keep policy and order information separate.       │
+│  Agent: Response Composer                                                   │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────── Crew Completion ──────────────────────────────┐
+│                                                                             │
+│  Crew Execution Completed                                                   │
+│  Name: crew                                                                 │
+│  ID: ab401fc1-42ee-4842-8f01-dbc94a941170                                   │
+│  Final Output: Please share your order ID (format ORD-1234) so I can check  │
+│  it.                                                                        │
+│                                                                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+--- Edge: order question without an id: execution summary ---
+rag_lookup invocations:         [{'query': 'Can you check my order status?'}]
+check_order_status invocations: []
+LLM calls per agent:            {'retrieval': 2, 'lookup': 1, 'composer': 1}
+[retrieval task output] {"tool": "rag_lookup", "grounded": true, "answer": "An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support. Items that arrive damaged, defective, expired or different from what was ordered must be reported through the Help Centre within 48 hours of delivery.", "sources": ["KB-11", "KB-03", "KB-10"], "top_similarity": 0.4487, "threshold": 0.33, "context": [{"chunk_id": "KB-11::fixed::02", "doc_id": "KB-11", "similarity": 0.4487, "text": "not available, and any customs duty is paid by the customer. International orders cannot be returned or exchanged, but damaged-item claims are still accepted within 48 hours of delivery."}, {"chunk_id": "KB-03::fixed::03", "doc_id": "KB-03", "similarity": 0.4406, "text": "by surface transport. An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support."}, {"chunk_id": "KB-10::fixed::00", "doc_id": "KB-10", "similarity": 0.4379, "text": "Items that arrive damaged, defective, expired or different from what was ordered must be reported through the Help Centre within 48 hours of delivery. The claim needs clear photos of the item, the outer packaging and the shipping label, and"}]}
+[lookup task output] Please share your order ID (format ORD-1234) so I can check it.
+[composer task output] Please share your order ID (format ORD-1234) so I can check it.
+FINAL DRAFT:
+Please share your order ID (format ORD-1234) so I can check it.
+
+==============================================================================
+SUMMARY
+==============================================================================
+[
+  {
+    "demo": "Demo A: policy retrieval",
+    "question": "How long do I have to return shoes?",
+    "rag_invocations": [
+      {
+        "query": "How long do I have to return shoes?"
+      }
+    ],
+    "order_invocations": [],
+    "llm_calls": {
+      "retrieval": 2,
+      "lookup": 1,
+      "composer": 1
+    },
+    "draft": "Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox."
+  },
+  {
+    "demo": "Demo B: order lookup",
+    "question": "What is the status of my order ORD-1016?",
+    "rag_invocations": [
+      {
+        "query": "What is the status of my order ORD-1016?"
+      }
+    ],
+    "order_invocations": [
+      {
+        "record_id": "ORD-1016"
+      }
+    ],
+    "llm_calls": {
+      "retrieval": 2,
+      "lookup": 2,
+      "composer": 1
+    },
+    "draft": "Order information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+  },
+  {
+    "demo": "Demo C: combined policy + order",
+    "question": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?",
+    "rag_invocations": [
+      {
+        "query": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?"
+      }
+    ],
+    "order_invocations": [
+      {
+        "record_id": "ORD-1029"
+      }
+    ],
+    "llm_calls": {
+      "retrieval": 2,
+      "lookup": 2,
+      "composer": 1
+    },
+    "draft": "Policy information (source: KB-01, KB-12): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.\nOrder information (ORD-1029): status Delivered, order value ₹3,562. Escalation score 0.92 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+  },
+  {
+    "demo": "Edge: unknown order",
+    "question": "Where is my order ORD-9999?",
+    "rag_invocations": [
+      {
+        "query": "Where is my order ORD-9999?"
+      }
+    ],
+    "order_invocations": [
+      {
+        "record_id": "ORD-9999"
+      }
+    ],
+    "llm_calls": {
+      "retrieval": 2,
+      "lookup": 2,
+      "composer": 1
+    },
+    "draft": "Order information: No order found with record_id ORD-9999. No order details have been assumed."
+  },
+  {
+    "demo": "Edge: out-of-scope",
+    "question": "What is the best way to train for a marathon?",
+    "rag_invocations": [
+      {
+        "query": "What is the best way to train for a marathon?"
+      }
+    ],
+    "order_invocations": [],
+    "llm_calls": {
+      "retrieval": 2,
+      "lookup": 1,
+      "composer": 1
+    },
+    "draft": "I don't have sufficient information in my knowledge base to answer that question."
+  },
+  {
+    "demo": "Edge: order question without an id",
+    "question": "Can you check my order status?",
+    "rag_invocations": [
+      {
+        "query": "Can you check my order status?"
+      }
+    ],
+    "order_invocations": [],
+    "llm_calls": {
+      "retrieval": 2,
+      "lookup": 1,
+      "composer": 1
+    },
+    "draft": "Please share your order ID (format ORD-1234) so I can check it."
+  }
+]
+
+OUTBOUND NETWORK ATTEMPTS DURING THIS RUN (socket guard from tests/conftest.py): []

@@ -1,0 +1,186 @@
+$ .venv\Scripts\python.exe scriptsun_rag_evaluation.py   # socket guard active; run 2026-11-02 after the KB-08 wording v2 clarification (Phase 7). The approved Phase 3 transcript phase3_rag.txt is kept unchanged as history.
+
+
+==============================================================================
+1. Indexing (collection.upsert, run twice to show re-ingestion creates no duplicates)
+==============================================================================
+Embedding model: sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41 | dimension 384 | device cpu | normalised
+Fixed: 40 words, overlap 10 | Sentence: 1 sentence/chunk
+  policies_fixed_overlap     space=cosine  chunks: run1=42 run2=42  collection.count()=42
+  policies_sentence_based    space=cosine  chunks: run1=55 run2=55  collection.count()=55
+
+==============================================================================
+2. Sample retrieval on both collections (k=3): 'How long do I have to return shoes?'
+==============================================================================
+  [policies_fixed_overlap]
+    0.5517  KB-01::fixed::01     provided it is unworn, unwashed and has all tags attached. Footwear can be retur...
+    0.5185  KB-01::fixed::00     Beauty products can be returned within 15 days of delivery only if they are unop...
+    0.5009  KB-01::fixed::02     Home items such as bedding, decor and kitchenware can be returned within 10 days...
+  [policies_sentence_based]
+    0.7479  KB-01::sentence::02  Footwear can be returned within 30 days of delivery if it is unworn and sent bac...
+    0.5980  KB-01::sentence::01  Apparel can be returned within 30 days of delivery provided it is unworn, unwash...
+    0.5289  KB-05::sentence::02  Footwear has a 60-day warranty against sole separation and broken stitching caus...
+
+==============================================================================
+3. Fallback threshold calibration: top-1 cosine similarity per query (search() pipeline)
+==============================================================================
+  [policies_fixed_overlap]
+    in_scope     0.7646  top1=KB-03  routed=None  How long does delivery take to a metro city?
+    in_scope     0.4247  top1=KB-01  routed=None  Can a courier collect a heavy bedsheet set I want to return?  (expected KB-04)
+    in_scope     0.4890  top1=KB-12  routed=escalation_matrix  How do I reach a senior support specialist about an unresolved complaint?
+    in_scope     0.4308  top1=KB-09  routed=None  Can I swap a dress for a smaller size?
+    in_scope     0.6499  top1=KB-07  routed=None  When do my loyalty points expire?
+    out_of_scope 0.0873  top1=KB-11  routed=None  What is the capital of France?
+    out_of_scope 0.0969  top1=KB-08  routed=None  Give me a recipe for chocolate chip cookies.
+    out_of_scope 0.1389  top1=KB-08  routed=None  Who won the 2011 Cricket World Cup?
+    out_of_scope 0.1061  top1=KB-01  routed=None  How do I fix a flat bicycle tyre?
+    out_of_scope 0.2360  top1=KB-12  routed=None  What will the weather be like in Mumbai tomorrow?
+    -> (0.42468154 + 0.23600596) / 2 = 0.33034375 -> threshold 0.33 | gap 0.18867558
+  [policies_sentence_based]
+    in_scope     0.7007  top1=KB-03  routed=None  How long does delivery take to a metro city?
+    in_scope     0.4963  top1=KB-04  routed=None  Can a courier collect a heavy bedsheet set I want to return?
+    in_scope     0.4691  top1=KB-12  routed=escalation_matrix  How do I reach a senior support specialist about an unresolved complaint?
+    in_scope     0.4120  top1=KB-09  routed=None  Can I swap a dress for a smaller size?
+    in_scope     0.6842  top1=KB-07  routed=None  When do my loyalty points expire?
+    out_of_scope 0.1204  top1=KB-11  routed=None  What is the capital of France?
+    out_of_scope 0.0986  top1=KB-08  routed=None  Give me a recipe for chocolate chip cookies.
+    out_of_scope 0.1632  top1=KB-05  routed=None  Who won the 2011 Cricket World Cup?
+    out_of_scope 0.1589  top1=KB-05  routed=None  How do I fix a flat bicycle tyre?
+    out_of_scope 0.1910  top1=KB-03  routed=None  What will the weather be like in Mumbai tomorrow?
+    -> (0.41202819 + 0.19095361) / 2 = 0.30149090 -> threshold 0.301 | gap 0.22107458
+
+==============================================================================
+4. Grounded generation (answers use ONLY retrieved chunks above the threshold)
+==============================================================================
+  [policies_fixed_overlap] threshold=0.33
+    Q1: How many days do I have to return a lipstick I haven't opened?
+        top1=0.6202 grounded=True routed=None sources=['KB-01', 'KB-10']
+        answer: Beauty products can be returned within 15 days of delivery only if they are unopened and the original seal is intact.
+    Q2: I paid cash on delivery and returned the item; when will I get my refund?
+        top1=0.6792 grounded=True routed=None sources=['KB-02', 'KB-01', 'KB-06']
+        answer: Refunds for cash-on-delivery orders start only after the returned item reaches our warehouse and passes a quality check, which takes up to 2 business days after pickup.
+    Q3: My hair dryer stopped working after three months. Is it covered?
+        top1=0.4412 grounded=True routed=warranty sources=['KB-05']
+        answer: Electronics come with a 12-month manufacturer warranty from the delivery date, and claims are handled at the brand's authorised service centre with Nykaa support helping to raise the claim. No warranty covers physical damage, liquid damage, misuse or repairs done by an unauthorised person.
+    Q4: My order has already shipped. Can I still cancel it, and what happens to the loyalty points I used?
+        top1=0.6531 grounded=True routed=None sources=['KB-06', 'KB-07']
+        answer: Cancelled cash-on-delivery orders need no refund, and any loyalty points used on a cancelled order are restored within 24 hours. An order can be cancelled free of charge from the app or website while its status is Placed, before it has been dispatched.
+    Q5: Can you ship sneakers to Singapore, and who pays the customs duty?
+        top1=0.5740 grounded=True routed=None sources=['KB-11']
+        answer: International delivery is offered only to the United Arab Emirates, the United Kingdom, the United States and Singapore, and only for Beauty and Apparel products. International orders take 10 to 15 business days, must be prepaid because cash on delivery is not available, and any customs duty is paid by the customer.
+    Q6: My payment failed but the money was deducted from my account. What should I do?
+        top1=0.6023 grounded=True routed=None sources=['KB-08']
+        answer: If money was debited for a failed payment, it is automatically reversed to the original payment method within 5 to 7 business days, and no claim needs to be raised. Once all 3 retries have also failed, the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery.
+    OOS: What is the best way to train for a marathon?
+        top1=0.0524 grounded=False routed=None sources=[]
+        answer: I don't have sufficient information in my knowledge base to answer that question.
+    generator calls: 6 (fallbacks never call the generator)
+  [policies_sentence_based] threshold=0.301
+    Q1: How many days do I have to return a lipstick I haven't opened?
+        top1=0.6800 grounded=True routed=None sources=['KB-01']
+        answer: Beauty products can be returned within 15 days of delivery only if they are unopened and the original seal is intact.
+    Q2: I paid cash on delivery and returned the item; when will I get my refund?
+        top1=0.7414 grounded=True routed=None sources=['KB-02', 'KB-06']
+        answer: Refunds for cash-on-delivery orders start only after the returned item reaches our warehouse and passes a quality check, which takes up to 2 business days after pickup.
+    Q3: My hair dryer stopped working after three months. Is it covered?
+        top1=0.4460 grounded=True routed=warranty sources=['KB-05']
+        answer: Electronics come with a 12-month manufacturer warranty from the delivery date, and claims are handled at the brand's authorised service centre with Nykaa support helping to raise the claim.
+    Q4: My order has already shipped. Can I still cancel it, and what happens to the loyalty points I used?
+        top1=0.6966 grounded=True routed=None sources=['KB-06']
+        answer: Cancelled cash-on-delivery orders need no refund, and any loyalty points used on a cancelled order are restored within 24 hours. An order can be cancelled free of charge from the app or website while its status is Placed, before it has been dispatched.
+    Q5: Can you ship sneakers to Singapore, and who pays the customs duty?
+        top1=0.5175 grounded=True routed=None sources=['KB-11']
+        answer: International delivery is offered only to the United Arab Emirates, the United Kingdom, the United States and Singapore, and only for Beauty and Apparel products. International orders take 10 to 15 business days, must be prepaid because cash on delivery is not available, and any customs duty is paid by the customer.
+    Q6: My payment failed but the money was deducted from my account. What should I do?
+        top1=0.5827 grounded=True routed=None sources=['KB-08', 'KB-06']
+        answer: If money was debited for a failed payment, it is automatically reversed to the original payment method within 5 to 7 business days, and no claim needs to be raised. Once all 3 retries have also failed, the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery.
+    OOS: What is the best way to train for a marathon?
+        top1=0.0656 grounded=False routed=None sources=[]
+        answer: I don't have sufficient information in my knowledge base to answer that question.
+    generator calls: 6 (fallbacks never call the generator)
+
+==============================================================================
+5. Document-level precision / recall (top-3 chunks -> parent docs, deduped)
+==============================================================================
+  [policies_fixed_overlap]
+    Q1: chunks ['KB-01::fixed::00', 'KB-01::fixed::02', 'KB-10::fixed::02']
+        docs ['KB-01', 'KB-10'] relevant ['KB-01'] -> P = 1/2 = 0.500  R = 1/1 = 1.000
+    Q2: chunks ['KB-02::fixed::00', 'KB-01::fixed::03', 'KB-06::fixed::01']
+        docs ['KB-02', 'KB-01', 'KB-06'] relevant ['KB-02'] -> P = 1/3 = 0.333  R = 1/1 = 1.000
+    Q3: chunks ['KB-05::fixed::00', 'KB-05::fixed::02', 'KB-05::fixed::01']
+        docs ['KB-05'] relevant ['KB-05'] -> P = 1/1 = 1.000  R = 1/1 = 1.000
+    Q4: chunks ['KB-06::fixed::00', 'KB-07::fixed::02', 'KB-06::fixed::02']
+        docs ['KB-06', 'KB-07'] relevant ['KB-06', 'KB-07'] -> P = 2/2 = 1.000  R = 2/2 = 1.000
+    Q5: chunks ['KB-11::fixed::02', 'KB-11::fixed::00', 'KB-11::fixed::01']
+        docs ['KB-11'] relevant ['KB-11'] -> P = 1/1 = 1.000  R = 1/1 = 1.000
+    Q6: chunks ['KB-08::fixed::01', 'KB-08::fixed::02', 'KB-08::fixed::00']
+        docs ['KB-08'] relevant ['KB-08'] -> P = 1/1 = 1.000  R = 1/1 = 1.000
+    AVERAGE: precision = (0.500 + 0.333 + 1.000 + 1.000 + 1.000 + 1.000) / 6 = 0.8056 | recall = (1.000 + 1.000 + 1.000 + 1.000 + 1.000 + 1.000) / 6 = 1.0000 | F1 = 2*0.8056*1.0000/(0.8056+1.0000) = 0.8923
+  [policies_sentence_based]
+    Q1: chunks ['KB-01::sentence::00', 'KB-01::sentence::03', 'KB-01::sentence::01']
+        docs ['KB-01'] relevant ['KB-01'] -> P = 1/1 = 1.000  R = 1/1 = 1.000
+    Q2: chunks ['KB-02::sentence::00', 'KB-02::sentence::03', 'KB-06::sentence::03']
+        docs ['KB-02', 'KB-06'] relevant ['KB-02'] -> P = 1/2 = 0.500  R = 1/1 = 1.000
+    Q3: chunks ['KB-05::sentence::00', 'KB-05::sentence::03', 'KB-05::sentence::01']
+        docs ['KB-05'] relevant ['KB-05'] -> P = 1/1 = 1.000  R = 1/1 = 1.000
+    Q4: chunks ['KB-06::sentence::03', 'KB-06::sentence::00', 'KB-06::sentence::01']
+        docs ['KB-06'] relevant ['KB-06', 'KB-07'] -> P = 1/1 = 1.000  R = 1/2 = 0.500
+    Q5: chunks ['KB-11::sentence::01', 'KB-11::sentence::00', 'KB-11::sentence::02']
+        docs ['KB-11'] relevant ['KB-11'] -> P = 1/1 = 1.000  R = 1/1 = 1.000
+    Q6: chunks ['KB-08::sentence::01', 'KB-08::sentence::02', 'KB-06::sentence::02']
+        docs ['KB-08', 'KB-06'] relevant ['KB-08'] -> P = 1/2 = 0.500  R = 1/1 = 1.000
+    AVERAGE: precision = (1.000 + 0.500 + 1.000 + 1.000 + 1.000 + 0.500) / 6 = 0.8333 | recall = (1.000 + 1.000 + 1.000 + 0.500 + 1.000 + 1.000) / 6 = 0.9167 | F1 = 2*0.8333*0.9167/(0.8333+0.9167) = 0.8730
+
+==============================================================================
+6. Return-vs-warranty regression: plain dense retrieve() BEFORE vs search() AFTER
+==============================================================================
+  [policies_fixed_overlap]
+    Q3 routed=warranty categories=['Electronics']: My hair dryer stopped working after three months. Is it covered?
+        before [['KB-01::fixed::02', 0.3638], ['KB-05::fixed::02', 0.2942], ['KB-01::fixed::03', 0.2637]]
+        after  [['KB-05::fixed::00', 0.4412], ['KB-05::fixed::02', 0.4242], ['KB-05::fixed::01', 0.3869]]
+    W1 routed=warranty categories=['Electronics']: My trimmer stopped working after five months. Will it be repaired for free?
+        before [['KB-10::fixed::02', 0.432], ['KB-05::fixed::02', 0.3684], ['KB-05::fixed::01', 0.3028]]
+        after  [['KB-05::fixed::02', 0.434], ['KB-05::fixed::00', 0.4248], ['KB-05::fixed::01', 0.398]]
+    W2 routed=warranty categories=['Electronics']: The straightener I bought last year no longer heats up. Is it under warranty?
+        before [['KB-05::fixed::00', 0.4067], ['KB-05::fixed::02', 0.4002], ['KB-05::fixed::01', 0.3975]]
+        after  [['KB-05::fixed::00', 0.4961], ['KB-05::fixed::01', 0.4304], ['KB-05::fixed::02', 0.4255]]
+    W3 routed=warranty categories=['Footwear']: The sole of my sandals came apart after a month of use. What can I do?
+        before [['KB-01::fixed::01', 0.4393], ['KB-05::fixed::01', 0.3575], ['KB-05::fixed::02', 0.2727]]
+        after  [['KB-05::fixed::01', 0.5207], ['KB-05::fixed::02', 0.4484], ['KB-05::fixed::00', 0.2803]]
+    W4 routed=warranty categories=['Home']: My kitchen mixer broke down after two months. Is that covered?
+        before [['KB-05::fixed::00', 0.301], ['KB-10::fixed::02', 0.268], ['KB-01::fixed::02', 0.2609]]
+        after  [['KB-05::fixed::00', 0.4989], ['KB-05::fixed::01', 0.4277], ['KB-05::fixed::02', 0.3857]]
+    R1 routed=None categories=['Electronics']: Can I return a hair dryer I bought four days ago because I don't like it?
+        before [['KB-01::fixed::02', 0.5865], ['KB-10::fixed::02', 0.4522], ['KB-01::fixed::03', 0.4306]]
+        after  [['KB-01::fixed::02', 0.5865], ['KB-10::fixed::02', 0.4522], ['KB-01::fixed::03', 0.4306]]
+    R2 routed=None categories=['Electronics']: My new hair dryer was dead on arrival yesterday. Can I send it back?
+        before [['KB-01::fixed::02', 0.5455], ['KB-01::fixed::03', 0.422], ['KB-10::fixed::02', 0.42]]
+        after  [['KB-01::fixed::02', 0.5455], ['KB-01::fixed::03', 0.422], ['KB-10::fixed::02', 0.42]]
+    top-1 relevant: before 4/7, after 7/7; routing as expected 7/7
+  [policies_sentence_based]
+    Q3 routed=warranty categories=['Electronics']: My hair dryer stopped working after three months. Is it covered?
+        before [['KB-01::sentence::04', 0.5099], ['KB-05::sentence::03', 0.2812], ['KB-12::sentence::03', 0.2632]]
+        after  [['KB-05::sentence::00', 0.446], ['KB-05::sentence::03', 0.4155], ['KB-05::sentence::01', 0.3717]]
+    W1 routed=warranty categories=['Electronics']: My trimmer stopped working after five months. Will it be repaired for free?
+        before [['KB-01::sentence::04', 0.4526], ['KB-10::sentence::02', 0.4159], ['KB-05::sentence::04', 0.3402]]
+        after  [['KB-05::sentence::04', 0.4223], ['KB-05::sentence::01', 0.4156], ['KB-05::sentence::03', 0.4006]]
+    W2 routed=warranty categories=['Electronics']: The straightener I bought last year no longer heats up. Is it under warranty?
+        before [['KB-01::sentence::04', 0.51], ['KB-05::sentence::00', 0.3915], ['KB-05::sentence::04', 0.3914]]
+        after  [['KB-05::sentence::00', 0.4899], ['KB-05::sentence::01', 0.4295], ['KB-05::sentence::04', 0.3978]]
+    W3 routed=warranty categories=['Footwear']: The sole of my sandals came apart after a month of use. What can I do?
+        before [['KB-05::sentence::02', 0.5406], ['KB-01::sentence::02', 0.513], ['KB-01::sentence::01', 0.3016]]
+        after  [['KB-05::sentence::02', 0.7135], ['KB-05::sentence::03', 0.3782], ['KB-05::sentence::00', 0.3109]]
+    W4 routed=warranty categories=['Home']: My kitchen mixer broke down after two months. Is that covered?
+        before [['KB-05::sentence::01', 0.3331], ['KB-05::sentence::04', 0.2945], ['KB-01::sentence::04', 0.2757]]
+        after  [['KB-05::sentence::01', 0.5208], ['KB-05::sentence::04', 0.4344], ['KB-05::sentence::00', 0.3922]]
+    R1 routed=None categories=['Electronics']: Can I return a hair dryer I bought four days ago because I don't like it?
+        before [['KB-01::sentence::04', 0.6825], ['KB-01::sentence::03', 0.4559], ['KB-01::sentence::01', 0.4413]]
+        after  [['KB-01::sentence::04', 0.6825], ['KB-01::sentence::03', 0.4559], ['KB-01::sentence::01', 0.4413]]
+    R2 routed=None categories=['Electronics']: My new hair dryer was dead on arrival yesterday. Can I send it back?
+        before [['KB-01::sentence::04', 0.6791], ['KB-01::sentence::01', 0.4023], ['KB-01::sentence::03', 0.3947]]
+        after  [['KB-01::sentence::04', 0.6791], ['KB-01::sentence::01', 0.4023], ['KB-01::sentence::03', 0.3947]]
+    top-1 relevant: before 4/7, after 7/7; routing as expected 7/7
+
+Wrote evaluation/rag_threshold_calibration.json, evaluation/chunking_comparison.json, evaluation/rag_intent_regression.json
+
+OUTBOUND NETWORK ATTEMPTS DURING THIS RUN (socket guard): []

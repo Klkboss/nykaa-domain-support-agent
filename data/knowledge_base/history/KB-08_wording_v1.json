@@ -1,0 +1,38 @@
+{
+  "_note": "Historical wording of KB-08 (wording version 1), preserved before the owner-approved clarification in Phase 7. SIMULATED policy, not official Nykaa policy. Never edit this file.",
+  "doc_id": "KB-08",
+  "wording_version": 1,
+  "superseded_by": "data/knowledge_base/policies.json (KB-08 wording version 2)",
+  "in_force_from_commit": "b5b9ef4 (Phase 2)",
+  "last_commit_with_this_wording": "a822a91",
+  "reason_for_clarification": "Sentence 1 ('retry the payment up to 3 times') counts retries after the first attempt (up to 4 attempts in total under the strict reading), while sentence 3 ('After 3 failed attempts ... switch') counts attempts in total, so the two count rules contradicted each other. Found in the Phase 7 remediation verification (E08). Owner-approved interpretation: three additional retries after the initial failed payment attempt, giving a maximum of four total attempts.",
+  "evaluations_run_against_this_wording": {
+    "original Phase 7 evaluation (commit b7e2fe9)": [
+      "evaluation/evaluation_results.json",
+      "evaluation/EVALUATION_REPORT.md"
+    ],
+    "Phase 7 remediation r1 (commits d5ffadb, b0ba629)": [
+      "evaluation/remediation/evaluation_results_r1_rubric_v1.json",
+      "evaluation/remediation/evaluation_results_r1_rubric_v2.json",
+      "evaluation/remediation/evaluation_results_r1_rubric_v3.json",
+      "evaluation/remediation/EVALUATION_REPORT_REMEDIATION.md"
+    ]
+  },
+  "r1_files_sha256": {
+    "evaluation/remediation/evaluation_results_r1_rubric_v1.json": "bdf4535e3a1fceb5e4f0b1cc6a5588fa8156cd92f0114afd8dd3ba908e225592",
+    "evaluation/remediation/evaluation_results_r1_rubric_v2.json": "b2205cfa07630437977176340444be168706ddb0d989cd4c9c8eb4a9999366d6",
+    "evaluation/remediation/evaluation_results_r1_rubric_v3.json": "685c730f1faeead88fc75a9d6379f5d636aeb5b41991b6aa8c804532f001c51b",
+    "evaluation/remediation/EVALUATION_REPORT_REMEDIATION.md": "b0f4720853adaaf7c865262c08f1b772c8235d1ac83fcad8103d2399134cf13b"
+  },
+  "document": {
+    "doc_id": "KB-08",
+    "title": "Payment Failure and Retry Policy",
+    "topic": "payment_failure",
+    "categories": [
+      "All"
+    ],
+    "simulated": true,
+    "text": "If a payment fails, the order is not placed and the customer can retry the payment up to 3 times within 30 minutes while the cart prices stay locked. If money was debited for a failed payment, it is automatically reversed to the original payment method within 5 to 7 business days, and no claim needs to be raised. After 3 failed attempts the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery. Cash on delivery is available only for orders up to ₹10,000 and only at pin codes where it is offered."
+  },
+  "_hash_note": "SHA-256 of LF-normalised content (equal to the git blob), the form test-locked in scripts/run_evaluation.py."
+}

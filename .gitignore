@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+# runtime artefacts
+chroma_db/
+logs/
+.crewai_storage/
+tests/.crewai-test-storage/
+.hf_cache/
+models/

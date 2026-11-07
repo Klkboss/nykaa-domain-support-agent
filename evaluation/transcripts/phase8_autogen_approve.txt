@@ -1,0 +1,38 @@
+$ .venv\Scripts\python.exe scripts\run_review_demo.py approve   # socket guard active (tests/conftest.py); run 2026-11-05. Spec Task 14/15 evidence, MOCK_LLM, zero API keys.
+
+MODE: approve
+question: How long do I have to return shoes?
+crew tool invocations: rag_lookup=[{'query': 'How long do I have to return shoes?'}] check_order_status=[]
+crew LLM calls per agent: {'retrieval': 2, 'lookup': 1, 'composer': 1}
+
+--- AutoGen input (the Composer's policy draft + the original retrieved context) ---
+DRAFT:
+Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+
+CONTEXT:
+Beauty products can be returned within 15 days of delivery only if they are unopened and the original seal is intact. Apparel can be returned within 30 days of delivery provided it is unworn, unwashed and has all tags attached. Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox. Home items such as bedding, decor and kitchenware can be returned within 10 days of delivery in their original packaging. Electronics such as hair dryers, straighteners and trimmers can be returned within 7 days of delivery only for a manufacturing
+
+--- AutoGen RoundRobinGroupChat(max_turns=2) messages ---
+[user] TextMessage: DRAFT:
+Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+
+CONTEXT:
+Beauty products can be returned within 15 days of delivery only if they are unopened and the original seal is intact. Apparel can be returned within 30 days of delivery provided it is unworn, unwashed and has all tags attached. Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox. Home items such as bedding, decor and kitchenware can be returned within 10 days of delivery in their original packaging. Electronics such as hair dryers, straighteners and trimmers can be returned within 7 days of delivery only for a manufacturing
+[Policy_Compliance_Reviewer] TextMessage: ALL CLAIMS SUPPORTED
+[Final_Editor] StructuredMessage[Verdict]: {"approved":true,"final_answer":"Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.","reason":"All claims are supported by the retrieved context."}
+
+--- Structured verdict (Verdict) ---
+{
+  "approved": true,
+  "final_answer": "Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.",
+  "reason": "All claims are supported by the retrieved context."
+}
+
+--- Pipeline result ---
+status: answered
+final reply: Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.
+groundedness guardrail: rejected_claims=[] grounded=True
+editor sentences not in the draft (discarded, never rendered): []
+request budget: used 5150 of 12000 estimated tokens (review reserved 904, its reviewer + editor calls spent 447; the rest was released)
+
+OUTBOUND NETWORK ATTEMPTS DURING THIS RUN (socket guard): []
