@@ -1,0 +1,328 @@
+{
+  "k": 3,
+  "queries": [
+    {
+      "id": "Q1",
+      "query": "How many days do I have to return a lipstick I haven't opened?",
+      "relevant_doc_ids": [
+        "KB-01"
+      ]
+    },
+    {
+      "id": "Q2",
+      "query": "I paid cash on delivery and returned the item; when will I get my refund?",
+      "relevant_doc_ids": [
+        "KB-02"
+      ]
+    },
+    {
+      "id": "Q3",
+      "query": "My hair dryer stopped working after three months. Is it covered?",
+      "relevant_doc_ids": [
+        "KB-05"
+      ]
+    },
+    {
+      "id": "Q4",
+      "query": "My order has already shipped. Can I still cancel it, and what happens to the loyalty points I used?",
+      "relevant_doc_ids": [
+        "KB-06",
+        "KB-07"
+      ]
+    },
+    {
+      "id": "Q5",
+      "query": "Can you ship sneakers to Singapore, and who pays the customs duty?",
+      "relevant_doc_ids": [
+        "KB-11"
+      ]
+    },
+    {
+      "id": "Q6",
+      "query": "My payment failed but the money was deducted from my account. What should I do?",
+      "relevant_doc_ids": [
+        "KB-08"
+      ]
+    }
+  ],
+  "strategies": {
+    "fixed": {
+      "collection": "policies_fixed_overlap",
+      "per_query": [
+        {
+          "id": "Q1",
+          "retrieved_chunk_ids": [
+            "KB-01::fixed::00",
+            "KB-01::fixed::02",
+            "KB-10::fixed::02"
+          ],
+          "retrieved_docs": [
+            "KB-01",
+            "KB-10"
+          ],
+          "relevant_docs": [
+            "KB-01"
+          ],
+          "relevant_retrieved": [
+            "KB-01"
+          ],
+          "precision": 0.5,
+          "recall": 1.0,
+          "precision_arithmetic": "1/2 = 0.500",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q2",
+          "retrieved_chunk_ids": [
+            "KB-02::fixed::00",
+            "KB-01::fixed::03",
+            "KB-06::fixed::01"
+          ],
+          "retrieved_docs": [
+            "KB-02",
+            "KB-01",
+            "KB-06"
+          ],
+          "relevant_docs": [
+            "KB-02"
+          ],
+          "relevant_retrieved": [
+            "KB-02"
+          ],
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "precision_arithmetic": "1/3 = 0.333",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q3",
+          "retrieved_chunk_ids": [
+            "KB-05::fixed::00",
+            "KB-05::fixed::02",
+            "KB-05::fixed::01"
+          ],
+          "retrieved_docs": [
+            "KB-05"
+          ],
+          "relevant_docs": [
+            "KB-05"
+          ],
+          "relevant_retrieved": [
+            "KB-05"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "precision_arithmetic": "1/1 = 1.000",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q4",
+          "retrieved_chunk_ids": [
+            "KB-06::fixed::00",
+            "KB-07::fixed::02",
+            "KB-06::fixed::02"
+          ],
+          "retrieved_docs": [
+            "KB-06",
+            "KB-07"
+          ],
+          "relevant_docs": [
+            "KB-06",
+            "KB-07"
+          ],
+          "relevant_retrieved": [
+            "KB-06",
+            "KB-07"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "precision_arithmetic": "2/2 = 1.000",
+          "recall_arithmetic": "2/2 = 1.000"
+        },
+        {
+          "id": "Q5",
+          "retrieved_chunk_ids": [
+            "KB-11::fixed::02",
+            "KB-11::fixed::00",
+            "KB-11::fixed::01"
+          ],
+          "retrieved_docs": [
+            "KB-11"
+          ],
+          "relevant_docs": [
+            "KB-11"
+          ],
+          "relevant_retrieved": [
+            "KB-11"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "precision_arithmetic": "1/1 = 1.000",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q6",
+          "retrieved_chunk_ids": [
+            "KB-08::fixed::01",
+            "KB-08::fixed::02",
+            "KB-08::fixed::00"
+          ],
+          "retrieved_docs": [
+            "KB-08"
+          ],
+          "relevant_docs": [
+            "KB-08"
+          ],
+          "relevant_retrieved": [
+            "KB-08"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "precision_arithmetic": "1/1 = 1.000",
+          "recall_arithmetic": "1/1 = 1.000"
+        }
+      ],
+      "avg_precision": 0.8056,
+      "avg_recall": 1.0,
+      "f1_of_averages": 0.8923
+    },
+    "sentence": {
+      "collection": "policies_sentence_based",
+      "per_query": [
+        {
+          "id": "Q1",
+          "retrieved_chunk_ids": [
+            "KB-01::sentence::00",
+            "KB-01::sentence::03",
+            "KB-01::sentence::01"
+          ],
+          "retrieved_docs": [
+            "KB-01"
+          ],
+          "relevant_docs": [
+            "KB-01"
+          ],
+          "relevant_retrieved": [
+            "KB-01"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "precision_arithmetic": "1/1 = 1.000",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q2",
+          "retrieved_chunk_ids": [
+            "KB-02::sentence::00",
+            "KB-02::sentence::03",
+            "KB-06::sentence::03"
+          ],
+          "retrieved_docs": [
+            "KB-02",
+            "KB-06"
+          ],
+          "relevant_docs": [
+            "KB-02"
+          ],
+          "relevant_retrieved": [
+            "KB-02"
+          ],
+          "precision": 0.5,
+          "recall": 1.0,
+          "precision_arithmetic": "1/2 = 0.500",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q3",
+          "retrieved_chunk_ids": [
+            "KB-05::sentence::00",
+            "KB-05::sentence::03",
+            "KB-05::sentence::01"
+          ],
+          "retrieved_docs": [
+            "KB-05"
+          ],
+          "relevant_docs": [
+            "KB-05"
+          ],
+          "relevant_retrieved": [
+            "KB-05"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "precision_arithmetic": "1/1 = 1.000",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q4",
+          "retrieved_chunk_ids": [
+            "KB-06::sentence::03",
+            "KB-06::sentence::00",
+            "KB-06::sentence::01"
+          ],
+          "retrieved_docs": [
+            "KB-06"
+          ],
+          "relevant_docs": [
+            "KB-06",
+            "KB-07"
+          ],
+          "relevant_retrieved": [
+            "KB-06"
+          ],
+          "precision": 1.0,
+          "recall": 0.5,
+          "precision_arithmetic": "1/1 = 1.000",
+          "recall_arithmetic": "1/2 = 0.500"
+        },
+        {
+          "id": "Q5",
+          "retrieved_chunk_ids": [
+            "KB-11::sentence::01",
+            "KB-11::sentence::00",
+            "KB-11::sentence::02"
+          ],
+          "retrieved_docs": [
+            "KB-11"
+          ],
+          "relevant_docs": [
+            "KB-11"
+          ],
+          "relevant_retrieved": [
+            "KB-11"
+          ],
+          "precision": 1.0,
+          "recall": 1.0,
+          "precision_arithmetic": "1/1 = 1.000",
+          "recall_arithmetic": "1/1 = 1.000"
+        },
+        {
+          "id": "Q6",
+          "retrieved_chunk_ids": [
+            "KB-08::sentence::01",
+            "KB-08::sentence::02",
+            "KB-06::sentence::02"
+          ],
+          "retrieved_docs": [
+            "KB-08",
+            "KB-06"
+          ],
+          "relevant_docs": [
+            "KB-08"
+          ],
+          "relevant_retrieved": [
+            "KB-08"
+          ],
+          "precision": 0.5,
+          "recall": 1.0,
+          "precision_arithmetic": "1/2 = 0.500",
+          "recall_arithmetic": "1/1 = 1.000"
+        }
+      ],
+      "avg_precision": 0.8333,
+      "avg_recall": 0.9167,
+      "f1_of_averages": 0.873
+    }
+  },
+  "retrieval": "search(): metadata-aware query analysis + dense top-k"
+}

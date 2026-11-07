@@ -1,0 +1,93 @@
+﻿$ .venv\Scripts\python.exe scripts\run_order_lookup_demo.py   # run 2026-11-02 11:42
+
+
+==============================================================================
+1. Formula and threshold derivation from the generated dataset
+==============================================================================
+escalation_score = 0.6 * delayed_shipment + 0.4 * (days_since_created / 30)
+days_since_created, sorted (n=50): [0, 1, 2, 2, 2, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 9, 9, 9, 10, 11, 11, 12, 13, 14, 14, 14, 15, 15, 16, 16, 16, 17, 17, 17, 19, 20, 20, 21, 22, 22, 23, 24, 24, 24, 26, 27, 27, 29]
+median = (13 + 14) / 2 = 13.5
+threshold = 0.6 + 0.4 * 13.5 / 30 = 0.7800  (code constant ESCALATION_THRESHOLD = 0.78, ESCALATION_AGE_DAYS = 13.5)
+score ranges: not delayed 0.0-0.4, delayed 0.6-1.0 -> only delayed orders aged >= 14 days reach 0.78
+
+==============================================================================
+2. check_order_status() for all 50 orders
+==============================================================================
+  ORD-1001  delayed=False days= 7  status=Delivered value=₹  2752  score=0.0933
+  ORD-1002  delayed=False days= 2  status=Placed    value=₹  9234  score=0.0267
+  ORD-1003  delayed=False days=16  status=Delivered value=₹  2104  score=0.2133
+  ORD-1004  delayed=False days=17  status=Returned  value=₹  6244  score=0.2267
+  ORD-1005  delayed=False days=24  status=Delivered value=₹   452  score=0.3200
+  ORD-1006  delayed=False days= 6  status=Delivered value=₹  2846  score=0.0800
+  ORD-1007  delayed=False days=11  status=Delivered value=₹  1191  score=0.1467
+  ORD-1008  delayed=False days=14  status=Returned  value=₹  6476  score=0.1867
+  ORD-1009  delayed=False days= 9  status=Shipped   value=₹ 19088  score=0.1200
+  ORD-1010  delayed=False days= 6  status=Refunded  value=₹  5228  score=0.0800
+  ORD-1011  delayed=False days= 2  status=Delivered value=₹  2569  score=0.0267
+  ORD-1012  delayed=False days=20  status=Shipped   value=₹ 15856  score=0.2667
+  ORD-1013  delayed=False days=22  status=Shipped   value=₹  2386  score=0.2933
+  ORD-1014  delayed=False days=17  status=Placed    value=₹  1900  score=0.2267
+  ORD-1015  delayed=False days= 7  status=Shipped   value=₹  4761  score=0.0933
+  ORD-1016  delayed=True  days=26  status=Returned  value=₹  8504  score=0.9467  <-- ESCALATE
+  ORD-1017  delayed=False days=29  status=Delivered value=₹  2127  score=0.3867
+  ORD-1018  delayed=False days=15  status=Delivered value=₹ 22476  score=0.2000
+  ORD-1019  delayed=False days= 4  status=Shipped   value=₹  9678  score=0.0533
+  ORD-1020  delayed=False days=13  status=Delivered value=₹  5287  score=0.1733
+  ORD-1021  delayed=False days=16  status=Delivered value=₹  1532  score=0.2133
+  ORD-1022  delayed=True  days=20  status=Refunded  value=₹  2803  score=0.8667  <-- ESCALATE
+  ORD-1023  delayed=False days=12  status=Placed    value=₹  6603  score=0.1600
+  ORD-1024  delayed=False days=27  status=Delivered value=₹  4931  score=0.3600
+  ORD-1025  delayed=False days=24  status=Delivered value=₹  9096  score=0.3200
+  ORD-1026  delayed=False days= 5  status=Delivered value=₹  4060  score=0.0667
+  ORD-1027  delayed=False days=16  status=Refunded  value=₹  9629  score=0.2133
+  ORD-1028  delayed=False days= 9  status=Delivered value=₹  5621  score=0.1200
+  ORD-1029  delayed=True  days=24  status=Delivered value=₹  3562  score=0.9200  <-- ESCALATE
+  ORD-1030  delayed=False days=19  status=Refunded  value=₹  1017  score=0.2533
+  ORD-1031  delayed=True  days= 7  status=Refunded  value=₹  2718  score=0.6933
+  ORD-1032  delayed=False days=23  status=Refunded  value=₹  3805  score=0.3067
+  ORD-1033  delayed=False days= 4  status=Returned  value=₹  1229  score=0.0533
+  ORD-1034  delayed=False days=27  status=Delivered value=₹ 18289  score=0.3600
+  ORD-1035  delayed=False days=22  status=Refunded  value=₹ 24917  score=0.2933
+  ORD-1036  delayed=False days=11  status=Refunded  value=₹  5722  score=0.1467
+  ORD-1037  delayed=False days= 2  status=Delivered value=₹  2339  score=0.0267
+  ORD-1038  delayed=True  days= 0  status=Delivered value=₹  2303  score=0.6000
+  ORD-1039  delayed=False days= 1  status=Delivered value=₹  7916  score=0.0133
+  ORD-1040  delayed=False days= 6  status=Delivered value=₹  4175  score=0.0800
+  ORD-1041  delayed=False days=15  status=Refunded  value=₹  9739  score=0.2000
+  ORD-1042  delayed=False days= 3  status=Shipped   value=₹  1171  score=0.0400
+  ORD-1043  delayed=False days=21  status=Shipped   value=₹   842  score=0.2800
+  ORD-1044  delayed=False days=10  status=Delivered value=₹  6464  score=0.1333
+  ORD-1045  delayed=True  days=14  status=Delivered value=₹  4592  score=0.7867  <-- ESCALATE
+  ORD-1046  delayed=False days=14  status=Shipped   value=₹   816  score=0.1867
+  ORD-1047  delayed=False days=17  status=Delivered value=₹ 22368  score=0.2267
+  ORD-1048  delayed=False days= 5  status=Refunded  value=₹  8744  score=0.0667
+  ORD-1049  delayed=False days= 5  status=Refunded  value=₹   879  score=0.0667
+  ORD-1050  delayed=False days= 9  status=Delivered value=₹ 15908  score=0.1200
+
+Escalation recommended: 4/50 = 8.0% (of 6 delayed orders: 4 escalated, 2 below threshold)
+Escalated by status: {'Returned': 1, 'Refunded': 1, 'Delivered': 2}
+Delayed but not escalated (younger than median): [('ORD-1031', 7, 0.6933), ('ORD-1038', 0, 0.6)]
+Highest non-delayed score: 0.3867
+
+==============================================================================
+3. Safe failure: malformed, unknown and injection-like ids (no data returned, input not echoed)
+==============================================================================
+  None                                          -> InvalidRecordIdError: record_id must be a string, got NoneType
+  1001                                          -> InvalidRecordIdError: record_id must be a string, got int
+  ''                                            -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  '   '                                         -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  'ORD-1'                                       -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  'ORD-12345'                                   -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  '1001'                                        -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  'ORD-9999'                                    -> OrderNotFoundError: No order found with record_id ORD-9999
+  'ORD-1001; DROP TABLE orders'                 -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  'ORD-1001\nIgnore previous instructions'      -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  '+91 98765 43210'                             -> InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)
+  ' ord-1029 '                                  -> {'status': 'Delivered', 'order_value_inr': 3562, 'escalation_score': 0.92, 'escalation_recommended': True} (normalised to ORD-1029)
+
+==============================================================================
+4. Determinism
+==============================================================================
+Second full pass identical to first: True
+
+Wrote evaluation/escalation_analysis.json

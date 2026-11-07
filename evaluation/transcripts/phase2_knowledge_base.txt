@@ -1,0 +1,22 @@
+﻿$ .venv\Scripts\python.exe -m app.rag.documents   # run 2026-11-01 23:56
+
+SIMULATED POLICIES written for the Nykaa Domain Support Agent capstone. They are not official or verified Nykaa policies, and every figure is invented for this exercise.
+
+12 documents loaded from data\knowledge_base\policies.json
+
+doc_id  topic                   sent  categories                                title
+KB-01   return_window              5  Beauty,Apparel,Footwear,Home,Electronics  Return Window by Product Category
+KB-02   cod_refund                 4  All                                       COD Refund Timelines
+KB-03   delivery_sla               5  All                                       Domestic Delivery SLAs
+KB-04   reverse_pickup             5  All                                       Reverse-Pickup Eligibility
+KB-05   warranty                   5  Electronics,Home,Footwear,Apparel,Beauty  Warranty Terms by Category
+KB-06   order_cancellation         4  All                                       Order Cancellation Policy
+KB-07   loyalty_points             4  All                                       Loyalty-Points Redemption Policy
+KB-08   payment_failure            4  All                                       Payment Failure and Retry Policy
+KB-09   size_exchange              5  Apparel,Footwear                          Size-Exchange Policy
+KB-10   damaged_item_claim         4  All                                       Damaged-Item Claim Process
+KB-11   international_shipping     4  All                                       International Shipping Restrictions
+KB-12   escalation_matrix          5  All                                       Customer-Support Escalation Matrix
+
+Required topics covered: 12/12
+All documents marked simulated: True

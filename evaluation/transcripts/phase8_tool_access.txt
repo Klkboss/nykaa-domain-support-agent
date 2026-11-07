@@ -1,0 +1,45 @@
+$ .venv\Scripts\python.exe scripts\run_governance_demo.py tools   # socket guard active (tests/conftest.py); run 2026-11-05. Spec Task 14/15 evidence, MOCK_LLM, zero API keys.
+
+
+==============================================================================
+1. The real crew: each agent's tools (enforced when build_support_crew() builds the crew)
+==============================================================================
+  Retrieval Agent    tools=['rag_lookup'] allow_delegation=False
+  Lookup Agent       tools=['check_order_status'] allow_delegation=False
+  Response Composer  tools=[] allow_delegation=False
+  enforce_crew_least_autonomy: OK (only the Lookup Agent holds check_order_status)
+
+==============================================================================
+2. Real kickoff using both tools: who invoked check_order_status, and grants afterwards
+==============================================================================
+  check_order_status invocations: [{'record_id': 'ORD-1029'}] (the tool object held only by the Lookup Agent)
+  rag_lookup invocations: [{'query': 'My order ORD-1029 arrived damaged. What is your damaged item policy?'}]
+  grants re-checked after kickoff: OK (CrewAI added no tools at run time)
+
+==============================================================================
+3. Refused wirings (negative cases)
+==============================================================================
+  refused: order tool added to the Retrieval Agent
+           -> LeastAutonomyViolation: Retrieval Agent must hold exactly ['rag_lookup'], got ['check_order_status', 'rag_lookup']
+  refused: order tool given to the Response Composer
+           -> LeastAutonomyViolation: Response Composer must hold exactly [], got ['check_order_status']
+  refused: order tool renamed 'order_status' on the Retrieval Agent
+           -> LeastAutonomyViolation: Retrieval Agent must hold exactly ['rag_lookup'], got ['order_status']
+  refused: order tool disguised as 'rag_lookup' on the Retrieval Agent
+           -> LeastAutonomyViolation: only the Lookup Agent may hold the order-lookup tool, not Retrieval Agent
+  refused: extra tool on the Lookup Agent
+           -> LeastAutonomyViolation: Lookup Agent must hold exactly ['check_order_status'], got ['check_order_status', 'rag_lookup']
+  refused: delegation enabled on the Response Composer
+           -> LeastAutonomyViolation: Response Composer may not delegate: delegation reaches other agents' tools
+  refused: unknown agent holding the order tool
+           -> LeastAutonomyViolation: 'Refund Agent' has no tool grant; every agent needs an explicit allow-list
+
+==============================================================================
+4. AutoGen reviewers: no tools; AutoGen itself refuses tools for their model client
+==============================================================================
+  Policy_Compliance_Reviewer  tools=[] handoff_tools=[] function_calling=False
+  Final_Editor                tools=[] handoff_tools=[] function_calling=False
+  enforce_reviewers_have_no_tools: OK
+  refused by AutoGen: reviewer with check_order_status -> ValueError: The model does not support function calling.
+
+OUTBOUND NETWORK ATTEMPTS DURING THIS RUN (socket guard): []

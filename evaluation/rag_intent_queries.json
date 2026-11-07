@@ -1,0 +1,11 @@
+{
+  "_note": "Return-vs-warranty regression set, added after the Phase 3 review found the Q3 miss. Written and committed BEFORE any intent-aware retrieval code existed. It is not an unbiased test set, because it was written with knowledge of the failure mode. It checks that a fix generalises beyond Q3 (other products and categories) and does not route return or dead-on-arrival questions to the warranty policy. The Task 5 evaluation queries in rag_queries.json are unchanged.",
+  "queries": [
+    {"id": "W1", "query": "My trimmer stopped working after five months. Will it be repaired for free?", "relevant_doc_ids": ["KB-05"], "expected_intent": "warranty"},
+    {"id": "W2", "query": "The straightener I bought last year no longer heats up. Is it under warranty?", "relevant_doc_ids": ["KB-05"], "expected_intent": "warranty"},
+    {"id": "W3", "query": "The sole of my sandals came apart after a month of use. What can I do?", "relevant_doc_ids": ["KB-05"], "expected_intent": "warranty"},
+    {"id": "W4", "query": "My kitchen mixer broke down after two months. Is that covered?", "relevant_doc_ids": ["KB-05"], "expected_intent": "warranty"},
+    {"id": "R1", "query": "Can I return a hair dryer I bought four days ago because I don't like it?", "relevant_doc_ids": ["KB-01"], "expected_intent": null},
+    {"id": "R2", "query": "My new hair dryer was dead on arrival yesterday. Can I send it back?", "relevant_doc_ids": ["KB-01", "KB-10"], "expected_intent": null}
+  ]
+}

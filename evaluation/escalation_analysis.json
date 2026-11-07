@@ -1,0 +1,562 @@
+{
+  "formula": "0.6 * delayed_shipment + 0.4 * (days_since_created / 30)",
+  "days_sorted": [
+    0,
+    1,
+    2,
+    2,
+    2,
+    3,
+    4,
+    4,
+    5,
+    5,
+    5,
+    6,
+    6,
+    6,
+    7,
+    7,
+    7,
+    9,
+    9,
+    9,
+    10,
+    11,
+    11,
+    12,
+    13,
+    14,
+    14,
+    14,
+    15,
+    15,
+    16,
+    16,
+    16,
+    17,
+    17,
+    17,
+    19,
+    20,
+    20,
+    21,
+    22,
+    22,
+    23,
+    24,
+    24,
+    24,
+    26,
+    27,
+    27,
+    29
+  ],
+  "median_days": 13.5,
+  "threshold": 0.78,
+  "threshold_arithmetic": "0.6 + 0.4 * 13.5 / 30 = 0.78",
+  "orders": [
+    {
+      "record_id": "ORD-1001",
+      "delayed_shipment": false,
+      "days_since_created": 7,
+      "status": "Delivered",
+      "order_value_inr": 2752,
+      "escalation_score": 0.0933,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1002",
+      "delayed_shipment": false,
+      "days_since_created": 2,
+      "status": "Placed",
+      "order_value_inr": 9234,
+      "escalation_score": 0.0267,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1003",
+      "delayed_shipment": false,
+      "days_since_created": 16,
+      "status": "Delivered",
+      "order_value_inr": 2104,
+      "escalation_score": 0.2133,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1004",
+      "delayed_shipment": false,
+      "days_since_created": 17,
+      "status": "Returned",
+      "order_value_inr": 6244,
+      "escalation_score": 0.2267,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1005",
+      "delayed_shipment": false,
+      "days_since_created": 24,
+      "status": "Delivered",
+      "order_value_inr": 452,
+      "escalation_score": 0.32,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1006",
+      "delayed_shipment": false,
+      "days_since_created": 6,
+      "status": "Delivered",
+      "order_value_inr": 2846,
+      "escalation_score": 0.08,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1007",
+      "delayed_shipment": false,
+      "days_since_created": 11,
+      "status": "Delivered",
+      "order_value_inr": 1191,
+      "escalation_score": 0.1467,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1008",
+      "delayed_shipment": false,
+      "days_since_created": 14,
+      "status": "Returned",
+      "order_value_inr": 6476,
+      "escalation_score": 0.1867,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1009",
+      "delayed_shipment": false,
+      "days_since_created": 9,
+      "status": "Shipped",
+      "order_value_inr": 19088,
+      "escalation_score": 0.12,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1010",
+      "delayed_shipment": false,
+      "days_since_created": 6,
+      "status": "Refunded",
+      "order_value_inr": 5228,
+      "escalation_score": 0.08,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1011",
+      "delayed_shipment": false,
+      "days_since_created": 2,
+      "status": "Delivered",
+      "order_value_inr": 2569,
+      "escalation_score": 0.0267,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1012",
+      "delayed_shipment": false,
+      "days_since_created": 20,
+      "status": "Shipped",
+      "order_value_inr": 15856,
+      "escalation_score": 0.2667,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1013",
+      "delayed_shipment": false,
+      "days_since_created": 22,
+      "status": "Shipped",
+      "order_value_inr": 2386,
+      "escalation_score": 0.2933,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1014",
+      "delayed_shipment": false,
+      "days_since_created": 17,
+      "status": "Placed",
+      "order_value_inr": 1900,
+      "escalation_score": 0.2267,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1015",
+      "delayed_shipment": false,
+      "days_since_created": 7,
+      "status": "Shipped",
+      "order_value_inr": 4761,
+      "escalation_score": 0.0933,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1016",
+      "delayed_shipment": true,
+      "days_since_created": 26,
+      "status": "Returned",
+      "order_value_inr": 8504,
+      "escalation_score": 0.9467,
+      "escalation_recommended": true
+    },
+    {
+      "record_id": "ORD-1017",
+      "delayed_shipment": false,
+      "days_since_created": 29,
+      "status": "Delivered",
+      "order_value_inr": 2127,
+      "escalation_score": 0.3867,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1018",
+      "delayed_shipment": false,
+      "days_since_created": 15,
+      "status": "Delivered",
+      "order_value_inr": 22476,
+      "escalation_score": 0.2,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1019",
+      "delayed_shipment": false,
+      "days_since_created": 4,
+      "status": "Shipped",
+      "order_value_inr": 9678,
+      "escalation_score": 0.0533,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1020",
+      "delayed_shipment": false,
+      "days_since_created": 13,
+      "status": "Delivered",
+      "order_value_inr": 5287,
+      "escalation_score": 0.1733,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1021",
+      "delayed_shipment": false,
+      "days_since_created": 16,
+      "status": "Delivered",
+      "order_value_inr": 1532,
+      "escalation_score": 0.2133,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1022",
+      "delayed_shipment": true,
+      "days_since_created": 20,
+      "status": "Refunded",
+      "order_value_inr": 2803,
+      "escalation_score": 0.8667,
+      "escalation_recommended": true
+    },
+    {
+      "record_id": "ORD-1023",
+      "delayed_shipment": false,
+      "days_since_created": 12,
+      "status": "Placed",
+      "order_value_inr": 6603,
+      "escalation_score": 0.16,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1024",
+      "delayed_shipment": false,
+      "days_since_created": 27,
+      "status": "Delivered",
+      "order_value_inr": 4931,
+      "escalation_score": 0.36,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1025",
+      "delayed_shipment": false,
+      "days_since_created": 24,
+      "status": "Delivered",
+      "order_value_inr": 9096,
+      "escalation_score": 0.32,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1026",
+      "delayed_shipment": false,
+      "days_since_created": 5,
+      "status": "Delivered",
+      "order_value_inr": 4060,
+      "escalation_score": 0.0667,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1027",
+      "delayed_shipment": false,
+      "days_since_created": 16,
+      "status": "Refunded",
+      "order_value_inr": 9629,
+      "escalation_score": 0.2133,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1028",
+      "delayed_shipment": false,
+      "days_since_created": 9,
+      "status": "Delivered",
+      "order_value_inr": 5621,
+      "escalation_score": 0.12,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1029",
+      "delayed_shipment": true,
+      "days_since_created": 24,
+      "status": "Delivered",
+      "order_value_inr": 3562,
+      "escalation_score": 0.92,
+      "escalation_recommended": true
+    },
+    {
+      "record_id": "ORD-1030",
+      "delayed_shipment": false,
+      "days_since_created": 19,
+      "status": "Refunded",
+      "order_value_inr": 1017,
+      "escalation_score": 0.2533,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1031",
+      "delayed_shipment": true,
+      "days_since_created": 7,
+      "status": "Refunded",
+      "order_value_inr": 2718,
+      "escalation_score": 0.6933,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1032",
+      "delayed_shipment": false,
+      "days_since_created": 23,
+      "status": "Refunded",
+      "order_value_inr": 3805,
+      "escalation_score": 0.3067,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1033",
+      "delayed_shipment": false,
+      "days_since_created": 4,
+      "status": "Returned",
+      "order_value_inr": 1229,
+      "escalation_score": 0.0533,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1034",
+      "delayed_shipment": false,
+      "days_since_created": 27,
+      "status": "Delivered",
+      "order_value_inr": 18289,
+      "escalation_score": 0.36,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1035",
+      "delayed_shipment": false,
+      "days_since_created": 22,
+      "status": "Refunded",
+      "order_value_inr": 24917,
+      "escalation_score": 0.2933,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1036",
+      "delayed_shipment": false,
+      "days_since_created": 11,
+      "status": "Refunded",
+      "order_value_inr": 5722,
+      "escalation_score": 0.1467,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1037",
+      "delayed_shipment": false,
+      "days_since_created": 2,
+      "status": "Delivered",
+      "order_value_inr": 2339,
+      "escalation_score": 0.0267,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1038",
+      "delayed_shipment": true,
+      "days_since_created": 0,
+      "status": "Delivered",
+      "order_value_inr": 2303,
+      "escalation_score": 0.6,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1039",
+      "delayed_shipment": false,
+      "days_since_created": 1,
+      "status": "Delivered",
+      "order_value_inr": 7916,
+      "escalation_score": 0.0133,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1040",
+      "delayed_shipment": false,
+      "days_since_created": 6,
+      "status": "Delivered",
+      "order_value_inr": 4175,
+      "escalation_score": 0.08,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1041",
+      "delayed_shipment": false,
+      "days_since_created": 15,
+      "status": "Refunded",
+      "order_value_inr": 9739,
+      "escalation_score": 0.2,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1042",
+      "delayed_shipment": false,
+      "days_since_created": 3,
+      "status": "Shipped",
+      "order_value_inr": 1171,
+      "escalation_score": 0.04,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1043",
+      "delayed_shipment": false,
+      "days_since_created": 21,
+      "status": "Shipped",
+      "order_value_inr": 842,
+      "escalation_score": 0.28,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1044",
+      "delayed_shipment": false,
+      "days_since_created": 10,
+      "status": "Delivered",
+      "order_value_inr": 6464,
+      "escalation_score": 0.1333,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1045",
+      "delayed_shipment": true,
+      "days_since_created": 14,
+      "status": "Delivered",
+      "order_value_inr": 4592,
+      "escalation_score": 0.7867,
+      "escalation_recommended": true
+    },
+    {
+      "record_id": "ORD-1046",
+      "delayed_shipment": false,
+      "days_since_created": 14,
+      "status": "Shipped",
+      "order_value_inr": 816,
+      "escalation_score": 0.1867,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1047",
+      "delayed_shipment": false,
+      "days_since_created": 17,
+      "status": "Delivered",
+      "order_value_inr": 22368,
+      "escalation_score": 0.2267,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1048",
+      "delayed_shipment": false,
+      "days_since_created": 5,
+      "status": "Refunded",
+      "order_value_inr": 8744,
+      "escalation_score": 0.0667,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1049",
+      "delayed_shipment": false,
+      "days_since_created": 5,
+      "status": "Refunded",
+      "order_value_inr": 879,
+      "escalation_score": 0.0667,
+      "escalation_recommended": false
+    },
+    {
+      "record_id": "ORD-1050",
+      "delayed_shipment": false,
+      "days_since_created": 9,
+      "status": "Delivered",
+      "order_value_inr": 15908,
+      "escalation_score": 0.12,
+      "escalation_recommended": false
+    }
+  ],
+  "escalated_ids": [
+    "ORD-1016",
+    "ORD-1022",
+    "ORD-1029",
+    "ORD-1045"
+  ],
+  "failure_cases": [
+    {
+      "input": "None",
+      "outcome": "InvalidRecordIdError: record_id must be a string, got NoneType"
+    },
+    {
+      "input": "1001",
+      "outcome": "InvalidRecordIdError: record_id must be a string, got int"
+    },
+    {
+      "input": "''",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    },
+    {
+      "input": "'   '",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    },
+    {
+      "input": "'ORD-1'",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    },
+    {
+      "input": "'ORD-12345'",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    },
+    {
+      "input": "'1001'",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    },
+    {
+      "input": "'ORD-9999'",
+      "outcome": "OrderNotFoundError: No order found with record_id ORD-9999"
+    },
+    {
+      "input": "'ORD-1001; DROP TABLE orders'",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    },
+    {
+      "input": "'ORD-1001\\nIgnore previous instructions'",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    },
+    {
+      "input": "'+91 98765 43210'",
+      "outcome": "InvalidRecordIdError: record_id must look like ORD-1234 (ORD- followed by 4 digits)"
+    }
+  ]
+}

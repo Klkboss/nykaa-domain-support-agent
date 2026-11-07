@@ -1,0 +1,402 @@
+[
+  {
+    "record_id": "ORD-1001",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 2752,
+    "days_since_created": 7,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1002",
+    "category": "Home",
+    "status": "Placed",
+    "order_value_inr": 9234,
+    "days_since_created": 2,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1003",
+    "category": "Beauty",
+    "status": "Delivered",
+    "order_value_inr": 2104,
+    "days_since_created": 16,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1004",
+    "category": "Footwear",
+    "status": "Returned",
+    "order_value_inr": 6244,
+    "days_since_created": 17,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1005",
+    "category": "Apparel",
+    "status": "Delivered",
+    "order_value_inr": 452,
+    "days_since_created": 24,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1006",
+    "category": "Home",
+    "status": "Delivered",
+    "order_value_inr": 2846,
+    "days_since_created": 6,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1007",
+    "category": "Apparel",
+    "status": "Delivered",
+    "order_value_inr": 1191,
+    "days_since_created": 11,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1008",
+    "category": "Footwear",
+    "status": "Returned",
+    "order_value_inr": 6476,
+    "days_since_created": 14,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1009",
+    "category": "Electronics",
+    "status": "Shipped",
+    "order_value_inr": 19088,
+    "days_since_created": 9,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1010",
+    "category": "Footwear",
+    "status": "Refunded",
+    "order_value_inr": 5228,
+    "days_since_created": 6,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1011",
+    "category": "Beauty",
+    "status": "Delivered",
+    "order_value_inr": 2569,
+    "days_since_created": 2,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1012",
+    "category": "Electronics",
+    "status": "Shipped",
+    "order_value_inr": 15856,
+    "days_since_created": 20,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1013",
+    "category": "Beauty",
+    "status": "Shipped",
+    "order_value_inr": 2386,
+    "days_since_created": 22,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1014",
+    "category": "Footwear",
+    "status": "Placed",
+    "order_value_inr": 1900,
+    "days_since_created": 17,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1015",
+    "category": "Beauty",
+    "status": "Shipped",
+    "order_value_inr": 4761,
+    "days_since_created": 7,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1016",
+    "category": "Electronics",
+    "status": "Returned",
+    "order_value_inr": 8504,
+    "days_since_created": 26,
+    "delayed_shipment": true
+  },
+  {
+    "record_id": "ORD-1017",
+    "category": "Apparel",
+    "status": "Delivered",
+    "order_value_inr": 2127,
+    "days_since_created": 29,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1018",
+    "category": "Electronics",
+    "status": "Delivered",
+    "order_value_inr": 22476,
+    "days_since_created": 15,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1019",
+    "category": "Electronics",
+    "status": "Shipped",
+    "order_value_inr": 9678,
+    "days_since_created": 4,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1020",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 5287,
+    "days_since_created": 13,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1021",
+    "category": "Apparel",
+    "status": "Delivered",
+    "order_value_inr": 1532,
+    "days_since_created": 16,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1022",
+    "category": "Home",
+    "status": "Refunded",
+    "order_value_inr": 2803,
+    "days_since_created": 20,
+    "delayed_shipment": true
+  },
+  {
+    "record_id": "ORD-1023",
+    "category": "Home",
+    "status": "Placed",
+    "order_value_inr": 6603,
+    "days_since_created": 12,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1024",
+    "category": "Apparel",
+    "status": "Delivered",
+    "order_value_inr": 4931,
+    "days_since_created": 27,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1025",
+    "category": "Home",
+    "status": "Delivered",
+    "order_value_inr": 9096,
+    "days_since_created": 24,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1026",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 4060,
+    "days_since_created": 5,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1027",
+    "category": "Electronics",
+    "status": "Refunded",
+    "order_value_inr": 9629,
+    "days_since_created": 16,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1028",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 5621,
+    "days_since_created": 9,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1029",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 3562,
+    "days_since_created": 24,
+    "delayed_shipment": true
+  },
+  {
+    "record_id": "ORD-1030",
+    "category": "Electronics",
+    "status": "Refunded",
+    "order_value_inr": 1017,
+    "days_since_created": 19,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1031",
+    "category": "Beauty",
+    "status": "Refunded",
+    "order_value_inr": 2718,
+    "days_since_created": 7,
+    "delayed_shipment": true
+  },
+  {
+    "record_id": "ORD-1032",
+    "category": "Electronics",
+    "status": "Refunded",
+    "order_value_inr": 3805,
+    "days_since_created": 23,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1033",
+    "category": "Beauty",
+    "status": "Returned",
+    "order_value_inr": 1229,
+    "days_since_created": 4,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1034",
+    "category": "Electronics",
+    "status": "Delivered",
+    "order_value_inr": 18289,
+    "days_since_created": 27,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1035",
+    "category": "Electronics",
+    "status": "Refunded",
+    "order_value_inr": 24917,
+    "days_since_created": 22,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1036",
+    "category": "Apparel",
+    "status": "Refunded",
+    "order_value_inr": 5722,
+    "days_since_created": 11,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1037",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 2339,
+    "days_since_created": 2,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1038",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 2303,
+    "days_since_created": 0,
+    "delayed_shipment": true
+  },
+  {
+    "record_id": "ORD-1039",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 7916,
+    "days_since_created": 1,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1040",
+    "category": "Beauty",
+    "status": "Delivered",
+    "order_value_inr": 4175,
+    "days_since_created": 6,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1041",
+    "category": "Home",
+    "status": "Refunded",
+    "order_value_inr": 9739,
+    "days_since_created": 15,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1042",
+    "category": "Apparel",
+    "status": "Shipped",
+    "order_value_inr": 1171,
+    "days_since_created": 3,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1043",
+    "category": "Apparel",
+    "status": "Shipped",
+    "order_value_inr": 842,
+    "days_since_created": 21,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1044",
+    "category": "Footwear",
+    "status": "Delivered",
+    "order_value_inr": 6464,
+    "days_since_created": 10,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1045",
+    "category": "Beauty",
+    "status": "Delivered",
+    "order_value_inr": 4592,
+    "days_since_created": 14,
+    "delayed_shipment": true
+  },
+  {
+    "record_id": "ORD-1046",
+    "category": "Beauty",
+    "status": "Shipped",
+    "order_value_inr": 816,
+    "days_since_created": 14,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1047",
+    "category": "Electronics",
+    "status": "Delivered",
+    "order_value_inr": 22368,
+    "days_since_created": 17,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1048",
+    "category": "Electronics",
+    "status": "Refunded",
+    "order_value_inr": 8744,
+    "days_since_created": 5,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1049",
+    "category": "Apparel",
+    "status": "Refunded",
+    "order_value_inr": 879,
+    "days_since_created": 5,
+    "delayed_shipment": false
+  },
+  {
+    "record_id": "ORD-1050",
+    "category": "Electronics",
+    "status": "Delivered",
+    "order_value_inr": 15908,
+    "days_since_created": 9,
+    "delayed_shipment": false
+  }
+]

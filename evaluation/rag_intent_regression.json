@@ -1,0 +1,609 @@
+{
+  "k": 3,
+  "strategies": {
+    "fixed": {
+      "rows": [
+        {
+          "id": "Q3",
+          "query": "My hair dryer stopped working after three months. Is it covered?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::fixed::02",
+              0.3638
+            ],
+            [
+              "KB-05::fixed::02",
+              0.2942
+            ],
+            [
+              "KB-01::fixed::03",
+              0.2637
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::fixed::00",
+              0.4412
+            ],
+            [
+              "KB-05::fixed::02",
+              0.4242
+            ],
+            [
+              "KB-05::fixed::01",
+              0.3869
+            ]
+          ],
+          "before_top1_relevant": false,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W1",
+          "query": "My trimmer stopped working after five months. Will it be repaired for free?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-10::fixed::02",
+              0.432
+            ],
+            [
+              "KB-05::fixed::02",
+              0.3684
+            ],
+            [
+              "KB-05::fixed::01",
+              0.3028
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::fixed::02",
+              0.434
+            ],
+            [
+              "KB-05::fixed::00",
+              0.4248
+            ],
+            [
+              "KB-05::fixed::01",
+              0.398
+            ]
+          ],
+          "before_top1_relevant": false,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W2",
+          "query": "The straightener I bought last year no longer heats up. Is it under warranty?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-05::fixed::00",
+              0.4067
+            ],
+            [
+              "KB-05::fixed::02",
+              0.4002
+            ],
+            [
+              "KB-05::fixed::01",
+              0.3975
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::fixed::00",
+              0.4961
+            ],
+            [
+              "KB-05::fixed::01",
+              0.4304
+            ],
+            [
+              "KB-05::fixed::02",
+              0.4255
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W3",
+          "query": "The sole of my sandals came apart after a month of use. What can I do?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Footwear"
+          ],
+          "before": [
+            [
+              "KB-01::fixed::01",
+              0.4393
+            ],
+            [
+              "KB-05::fixed::01",
+              0.3575
+            ],
+            [
+              "KB-05::fixed::02",
+              0.2727
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::fixed::01",
+              0.5207
+            ],
+            [
+              "KB-05::fixed::02",
+              0.4484
+            ],
+            [
+              "KB-05::fixed::00",
+              0.2803
+            ]
+          ],
+          "before_top1_relevant": false,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W4",
+          "query": "My kitchen mixer broke down after two months. Is that covered?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Home"
+          ],
+          "before": [
+            [
+              "KB-05::fixed::00",
+              0.301
+            ],
+            [
+              "KB-10::fixed::02",
+              0.268
+            ],
+            [
+              "KB-01::fixed::02",
+              0.2609
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::fixed::00",
+              0.4989
+            ],
+            [
+              "KB-05::fixed::01",
+              0.4277
+            ],
+            [
+              "KB-05::fixed::02",
+              0.3857
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "R1",
+          "query": "Can I return a hair dryer I bought four days ago because I don't like it?",
+          "relevant_doc_ids": [
+            "KB-01"
+          ],
+          "expected_intent": null,
+          "routed_topic": null,
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::fixed::02",
+              0.5865
+            ],
+            [
+              "KB-10::fixed::02",
+              0.4522
+            ],
+            [
+              "KB-01::fixed::03",
+              0.4306
+            ]
+          ],
+          "after": [
+            [
+              "KB-01::fixed::02",
+              0.5865
+            ],
+            [
+              "KB-10::fixed::02",
+              0.4522
+            ],
+            [
+              "KB-01::fixed::03",
+              0.4306
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "R2",
+          "query": "My new hair dryer was dead on arrival yesterday. Can I send it back?",
+          "relevant_doc_ids": [
+            "KB-01",
+            "KB-10"
+          ],
+          "expected_intent": null,
+          "routed_topic": null,
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::fixed::02",
+              0.5455
+            ],
+            [
+              "KB-01::fixed::03",
+              0.422
+            ],
+            [
+              "KB-10::fixed::02",
+              0.42
+            ]
+          ],
+          "after": [
+            [
+              "KB-01::fixed::02",
+              0.5455
+            ],
+            [
+              "KB-01::fixed::03",
+              0.422
+            ],
+            [
+              "KB-10::fixed::02",
+              0.42
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        }
+      ],
+      "top1_relevant_before": 4,
+      "top1_relevant_after": 7,
+      "routing_matches_expected": 7
+    },
+    "sentence": {
+      "rows": [
+        {
+          "id": "Q3",
+          "query": "My hair dryer stopped working after three months. Is it covered?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::sentence::04",
+              0.5099
+            ],
+            [
+              "KB-05::sentence::03",
+              0.2812
+            ],
+            [
+              "KB-12::sentence::03",
+              0.2632
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::sentence::00",
+              0.446
+            ],
+            [
+              "KB-05::sentence::03",
+              0.4155
+            ],
+            [
+              "KB-05::sentence::01",
+              0.3717
+            ]
+          ],
+          "before_top1_relevant": false,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W1",
+          "query": "My trimmer stopped working after five months. Will it be repaired for free?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::sentence::04",
+              0.4526
+            ],
+            [
+              "KB-10::sentence::02",
+              0.4159
+            ],
+            [
+              "KB-05::sentence::04",
+              0.3402
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::sentence::04",
+              0.4223
+            ],
+            [
+              "KB-05::sentence::01",
+              0.4156
+            ],
+            [
+              "KB-05::sentence::03",
+              0.4006
+            ]
+          ],
+          "before_top1_relevant": false,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W2",
+          "query": "The straightener I bought last year no longer heats up. Is it under warranty?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::sentence::04",
+              0.51
+            ],
+            [
+              "KB-05::sentence::00",
+              0.3915
+            ],
+            [
+              "KB-05::sentence::04",
+              0.3914
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::sentence::00",
+              0.4899
+            ],
+            [
+              "KB-05::sentence::01",
+              0.4295
+            ],
+            [
+              "KB-05::sentence::04",
+              0.3978
+            ]
+          ],
+          "before_top1_relevant": false,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W3",
+          "query": "The sole of my sandals came apart after a month of use. What can I do?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Footwear"
+          ],
+          "before": [
+            [
+              "KB-05::sentence::02",
+              0.5406
+            ],
+            [
+              "KB-01::sentence::02",
+              0.513
+            ],
+            [
+              "KB-01::sentence::01",
+              0.3016
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::sentence::02",
+              0.7135
+            ],
+            [
+              "KB-05::sentence::03",
+              0.3782
+            ],
+            [
+              "KB-05::sentence::00",
+              0.3109
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "W4",
+          "query": "My kitchen mixer broke down after two months. Is that covered?",
+          "relevant_doc_ids": [
+            "KB-05"
+          ],
+          "expected_intent": "warranty",
+          "routed_topic": "warranty",
+          "categories": [
+            "Home"
+          ],
+          "before": [
+            [
+              "KB-05::sentence::01",
+              0.3331
+            ],
+            [
+              "KB-05::sentence::04",
+              0.2945
+            ],
+            [
+              "KB-01::sentence::04",
+              0.2757
+            ]
+          ],
+          "after": [
+            [
+              "KB-05::sentence::01",
+              0.5208
+            ],
+            [
+              "KB-05::sentence::04",
+              0.4344
+            ],
+            [
+              "KB-05::sentence::00",
+              0.3922
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "R1",
+          "query": "Can I return a hair dryer I bought four days ago because I don't like it?",
+          "relevant_doc_ids": [
+            "KB-01"
+          ],
+          "expected_intent": null,
+          "routed_topic": null,
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::sentence::04",
+              0.6825
+            ],
+            [
+              "KB-01::sentence::03",
+              0.4559
+            ],
+            [
+              "KB-01::sentence::01",
+              0.4413
+            ]
+          ],
+          "after": [
+            [
+              "KB-01::sentence::04",
+              0.6825
+            ],
+            [
+              "KB-01::sentence::03",
+              0.4559
+            ],
+            [
+              "KB-01::sentence::01",
+              0.4413
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        },
+        {
+          "id": "R2",
+          "query": "My new hair dryer was dead on arrival yesterday. Can I send it back?",
+          "relevant_doc_ids": [
+            "KB-01",
+            "KB-10"
+          ],
+          "expected_intent": null,
+          "routed_topic": null,
+          "categories": [
+            "Electronics"
+          ],
+          "before": [
+            [
+              "KB-01::sentence::04",
+              0.6791
+            ],
+            [
+              "KB-01::sentence::01",
+              0.4023
+            ],
+            [
+              "KB-01::sentence::03",
+              0.3947
+            ]
+          ],
+          "after": [
+            [
+              "KB-01::sentence::04",
+              0.6791
+            ],
+            [
+              "KB-01::sentence::01",
+              0.4023
+            ],
+            [
+              "KB-01::sentence::03",
+              0.3947
+            ]
+          ],
+          "before_top1_relevant": true,
+          "after_top1_relevant": true
+        }
+      ],
+      "top1_relevant_before": 4,
+      "top1_relevant_after": 7,
+      "routing_matches_expected": 7
+    }
+  }
+}

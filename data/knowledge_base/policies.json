@@ -1,0 +1,101 @@
+{
+  "disclaimer": "SIMULATED POLICIES written for the Nykaa Domain Support Agent capstone. They are not official or verified Nykaa policies, and every figure is invented for this exercise.",
+  "documents": [
+    {
+      "doc_id": "KB-01",
+      "title": "Return Window by Product Category",
+      "topic": "return_window",
+      "categories": ["Beauty", "Apparel", "Footwear", "Home", "Electronics"],
+      "simulated": true,
+      "text": "Beauty products can be returned within 15 days of delivery only if they are unopened and the original seal is intact. Apparel can be returned within 30 days of delivery provided it is unworn, unwashed and has all tags attached. Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox. Home items such as bedding, decor and kitchenware can be returned within 10 days of delivery in their original packaging. Electronics such as hair dryers, straighteners and trimmers can be returned within 7 days of delivery only for a manufacturing defect or if the device is dead on arrival."
+    },
+    {
+      "doc_id": "KB-02",
+      "title": "COD Refund Timelines",
+      "topic": "cod_refund",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "Refunds for cash-on-delivery orders start only after the returned item reaches our warehouse and passes a quality check, which takes up to 2 business days after pickup. Customers can choose to receive a COD refund as Nykaa Wallet credit, which is added within 24 hours of the quality check passing. Alternatively, a COD refund can be sent by bank transfer (NEFT) to a verified bank account, which takes 5 to 7 business days after the quality check. Cash refunds are never handed over at the doorstep, and an order's status changes to Refunded only once the money has been credited."
+    },
+    {
+      "doc_id": "KB-03",
+      "title": "Domestic Delivery SLAs",
+      "topic": "delivery_sla",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "Orders are dispatched within 1 business day of being placed, at which point their status changes from Placed to Shipped. Domestic orders to metro cities are delivered within 2 to 4 business days of dispatch, and orders to other serviceable pin codes within 4 to 7 business days. Remote areas, including the North-East states, Jammu and Kashmir, Ladakh and the Andaman and Nicobar Islands, have a delivery window of 7 to 10 business days. Large Electronics and Home items may take up to 2 additional business days because they travel by surface transport. An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support."
+    },
+    {
+      "doc_id": "KB-04",
+      "title": "Reverse-Pickup Eligibility",
+      "topic": "reverse_pickup",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "A free reverse pickup can be requested for any item that is within its category return window and was delivered to a pin code where our courier partners offer pickups. Reverse pickup is not available for opened beauty products, innerwear, personalised items or items bought on final sale, because these items cannot be returned. Our courier makes up to 2 pickup attempts, and the customer receives an SMS with the pickup date before each attempt. If reverse pickup is not available at the customer's pin code, the customer can self-ship the item and receive up to ₹100 in Nykaa Wallet credit towards the courier cost. Bulky Home items weighing more than 15 kg are collected through a scheduled pickup within 3 business days of the request."
+    },
+    {
+      "doc_id": "KB-05",
+      "title": "Warranty Terms by Category",
+      "topic": "warranty",
+      "categories": ["Electronics", "Home", "Footwear", "Apparel", "Beauty"],
+      "simulated": true,
+      "text": "Electronics come with a 12-month manufacturer warranty from the delivery date, and claims are handled at the brand's authorised service centre with Nykaa support helping to raise the claim. Home appliances and kitchen tools carry a 6-month warranty against manufacturing defects, while home decor and textiles carry no warranty. Footwear has a 60-day warranty against sole separation and broken stitching caused by manufacturing faults. Apparel and Beauty products carry no warranty and are covered only by their return window and the damaged-item claim process. No warranty covers physical damage, liquid damage, misuse or repairs done by an unauthorised person."
+    },
+    {
+      "doc_id": "KB-06",
+      "title": "Order Cancellation Policy",
+      "topic": "order_cancellation",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "An order can be cancelled free of charge from the app or website while its status is Placed, before it has been dispatched. Once an order is Shipped it can no longer be cancelled, but the customer may refuse the delivery or return the item within its return window. For prepaid orders, the cancellation refund goes back to the original payment method within 5 to 7 business days. Cancelled cash-on-delivery orders need no refund, and any loyalty points used on a cancelled order are restored within 24 hours."
+    },
+    {
+      "doc_id": "KB-07",
+      "title": "Loyalty-Points Redemption Policy",
+      "topic": "loyalty_points",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "Customers earn 2 loyalty points for every ₹100 spent, credited to their account once the order's return window has closed. Each point is worth ₹1 at checkout, a minimum of 100 points must be redeemed at a time, and points can cover at most 20% of an order's value. Points expire 12 months after they are credited and cannot be exchanged for cash or transferred to another account. If an order paid partly with points is cancelled, returned or refunded, the redeemed points are restored to the customer's account within 24 hours of the refund."
+    },
+    {
+      "doc_id": "KB-08",
+      "title": "Payment Failure and Retry Policy",
+      "topic": "payment_failure",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "If the first payment attempt fails, the order is not placed and the customer can retry the payment up to 3 more times within 30 minutes while the cart prices stay locked. If money was debited for a failed payment, it is automatically reversed to the original payment method within 5 to 7 business days, and no claim needs to be raised. Once all 3 retries have also failed, the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery. Cash on delivery is available only for orders up to ₹10,000 and only at pin codes where it is offered. The first attempt plus 3 retries means at most 4 payment attempts in total."
+    },
+    {
+      "doc_id": "KB-09",
+      "title": "Size-Exchange Policy",
+      "topic": "size_exchange",
+      "categories": ["Apparel", "Footwear"],
+      "simulated": true,
+      "text": "Size exchanges are offered only for Apparel and Footwear, within the same 30-day window from delivery that applies to their returns. Each item can be exchanged once for a different size of the same product, and the item must be unworn with its tags and original box where applicable. The replacement size is shipped after the original item is picked up and passes quality check, with no additional delivery charge. If the requested size is out of stock, the exchange is converted into a return and refunded under the normal refund rules. Beauty, Home and Electronics products are not eligible for size exchange."
+    },
+    {
+      "doc_id": "KB-10",
+      "title": "Damaged-Item Claim Process",
+      "topic": "damaged_item_claim",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "Items that arrive damaged, defective, expired or different from what was ordered must be reported through the Help Centre within 48 hours of delivery. The claim needs clear photos of the item, the outer packaging and the shipping label, and Electronics claims also need an unboxing video. Our team reviews each claim within 2 business days and then offers either a free replacement or a full refund. Damaged-item claims are accepted even for opened beauty products, because the normal return conditions do not apply to items that arrived damaged."
+    },
+    {
+      "doc_id": "KB-11",
+      "title": "International Shipping Restrictions",
+      "topic": "international_shipping",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "International delivery is offered only to the United Arab Emirates, the United Kingdom, the United States and Singapore, and only for Beauty and Apparel products. Electronics, perfumes, aerosols, nail polish and other flammable items cannot be shipped internationally because of dangerous-goods and customs rules. International orders take 10 to 15 business days, must be prepaid because cash on delivery is not available, and any customs duty is paid by the customer. International orders cannot be returned or exchanged, but damaged-item claims are still accepted within 48 hours of delivery."
+    },
+    {
+      "doc_id": "KB-12",
+      "title": "Customer-Support Escalation Matrix",
+      "topic": "escalation_matrix",
+      "categories": ["All"],
+      "simulated": true,
+      "text": "Level 1 support is handled by the virtual assistant and chat agents, who aim to resolve a query within 24 hours. A case moves to Level 2, a senior support specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score. Level 2 specialists respond within 4 business hours and aim to resolve the case within 48 hours. Cases still unresolved after 72 hours, or repeated complaints about the same order, are escalated to Level 3, the grievance officer, who responds within 2 business days. Customers are told their case reference number and current escalation level at every handover."
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+$ .venv\Scripts\python.exe -c "import tests.conftest as guard; runpy.run_path('scripts/run_remediation_evidence.py')"   # socket guard active; run 2026-11-02 after the KB-08 wording v2 clarification. phase7_remediation.txt (KB-08 v1) is kept unchanged as history.
+
+
+==============================================================================
+E12 root cause and fix: plain dense retrieve() (pre-remediation path) vs shared search()
+==============================================================================
+query: My order ORD-1022 was delayed. Will my complaint be escalated to a senior specialist?
+analyse_query: topic='escalation_matrix', search_text unchanged=True
+  [fixed] before: [('KB-12::fixed::02', 0.538), ('KB-12::fixed::01', 0.5329), ('KB-10::fixed::00', 0.4666)]
+  [fixed] after : [('KB-12::fixed::02', 0.538), ('KB-12::fixed::01', 0.5329), ('KB-12::fixed::03', 0.4564)]
+  [fixed] answer after: Cases still unresolved after 72 hours, or repeated complaints about the same order, are escalated to Level 3, the grievance officer, who responds within 2 business days. Level 2 specialists respond within 4 business hours and aim to resolve the case within 48 hours.
+  [sentence] before: [('KB-12::sentence::03', 0.5554), ('KB-12::sentence::01', 0.5546), ('KB-10::sentence::00', 0.5222)]
+  [sentence] after : [('KB-12::sentence::03', 0.5554), ('KB-12::sentence::01', 0.5546), ('KB-12::sentence::02', 0.4665)]
+  [sentence] answer after: Cases still unresolved after 72 hours, or repeated complaints about the same order, are escalated to Level 3, the grievance officer, who responds within 2 business days. A case moves to Level 2, a senior support specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score.
+
+==============================================================================
+Frozen escalation regression set (evaluation/rag_escalation_queries.json)
+==============================================================================
+  X1  route=escalation_matrix  expected=escalation_matrix  OK  top1 fixed=KB-12 sentence=KB-12 relevant=['KB-12']  My complaint has been unresolved for three days. Who can I escalate it to?
+  X2  route=escalation_matrix  expected=escalation_matrix  OK  top1 fixed=KB-12 sentence=KB-12 relevant=['KB-12']  How do I contact the grievance officer?
+  X3  route=escalation_matrix  expected=escalation_matrix  OK  top1 fixed=KB-12 sentence=KB-12 relevant=['KB-12']  Can I speak to a senior specialist about my order?
+  G1  route=escalation_matrix  expected=escalation_matrix  OK  top1 fixed=KB-12 sentence=KB-12 relevant=['KB-12']  What is your escalation process?
+  G2  route=escalation_matrix  expected=escalation_matrix  OK  top1 fixed=KB-12 sentence=KB-12 relevant=['KB-12']  My order ORD-1045 was delayed. Will my case be escalated?
+  D1  route=None               expected=None               OK  top1 fixed=KB-10 sentence=KB-11 relevant=['KB-10']  My parcel arrived damaged. How do I raise a claim?
+  D2  route=None               expected=None               OK  top1 fixed=KB-10 sentence=KB-01 relevant=['KB-10']  The lipstick I received has expired. What should I do?
+  D3  route=None               expected=None               OK  top1 fixed=KB-10 sentence=KB-10 relevant=['KB-10', 'KB-12']  My damaged-item claim was rejected. Can I escalate it?
+  N1  route=None               expected=None               OK  top1 fixed=KB-03 sentence=KB-03 relevant=['KB-03']  How long does delivery take to a metro city?
+  N2  route=None               expected=None               OK  top1 fixed=KB-01 sentence=KB-01 relevant=['KB-01']  Can I return shoes I bought last week?
+  N3  route=None               expected=None               OK  top1 fixed=KB-07 sentence=KB-06 relevant=['KB-06', 'KB-07']  What happens to my loyalty points if I cancel my order?
+
+==============================================================================
+E01 / E05 / E12 replies: original run (b7e2fe9) vs current pipeline (fixed collection)
+==============================================================================
+  E01: I bought a dress 20 days ago and haven't worn it. Can I still return it?
+    original : Policy information (source: KB-01): Apparel can be returned within 30 days of delivery provided it is unworn, unwashed and has all tags attached. Beauty products can be returned within 15 days of delivery only if they are unopened and the original seal is intact.
+    now      : Apparel can be returned within 30 days of delivery provided it is unworn, unwashed and has all tags attached.
+  E05: My trimmer broke after four months of use. Is it under warranty?
+    original : Policy information (source: KB-05): Electronics come with a 12-month manufacturer warranty from the delivery date, and claims are handled at the brand's authorised service centre with Nykaa support helping to raise the claim. Home appliances and kitchen tools carry a 6-month warranty against manufacturing defects, while home decor and textiles carry no warranty.
+    now      : Electronics come with a 12-month manufacturer warranty from the delivery date, and claims are handled at the brand's authorised service centre with Nykaa support helping to raise the claim. No warranty covers physical damage, liquid damage, misuse or repairs done by an unauthorised person.
+  E12: My order ORD-1022 was delayed. Will my complaint be escalated to a senior specialist?
+    original : Policy information (source: KB-10): Items that arrive damaged, defective, expired or different from what was ordered must be reported through the Help Centre within 48 hours of delivery.
+Order information (ORD-1022): status Refunded, order value ₹2,803. Escalation score 0.8667 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation.
+    now      : Cases still unresolved after 72 hours, or repeated complaints about the same order, are escalated to Level 3, the grievance officer, who responds within 2 business days. Level 2 specialists respond within 4 business hours and aim to resolve the case within 48 hours.
+
+==============================================================================
+KB-08 clarification (owner-approved): wording v1 (history) vs wording v2 (current)
+==============================================================================
+  KB-08 v1 s1: If a payment fails, the order is not placed and the customer can retry the payment up to 3 times within 30 minutes while the cart prices stay locked.
+  KB-08 v1 s2: If money was debited for a failed payment, it is automatically reversed to the original payment method within 5 to 7 business days, and no claim needs to be raised.
+  KB-08 v1 s3: After 3 failed attempts the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery.
+  KB-08 v1 s4: Cash on delivery is available only for orders up to ₹10,000 and only at pin codes where it is offered.
+  KB-08 v2 s1: If the first payment attempt fails, the order is not placed and the customer can retry the payment up to 3 more times within 30 minutes while the cart prices stay locked.
+  KB-08 v2 s2: If money was debited for a failed payment, it is automatically reversed to the original payment method within 5 to 7 business days, and no claim needs to be raised.
+  KB-08 v2 s3: Once all 3 retries have also failed, the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery.
+  KB-08 v2 s4: Cash on delivery is available only for orders up to ₹10,000 and only at pin codes where it is offered.
+  KB-08 v2 s5: The first attempt plus 3 retries means at most 4 payment attempts in total.
+  reason: Sentence 1 ('retry the payment up to 3 times') counts retries after the first attempt (up to 4 attempts in total under the strict reading), while sentence 3 ('After 3 failed attempts ... switch') counts attempts in total, so the two count rules contradicted each other. Found in the Phase 7 remediation verification (E08). Owner-approved interpretation: three additional retries after the initial failed payment attempt, giving a maximum of four total attempts.
+
+==============================================================================
+E08 end to end on KB-08 wording v2 (frozen question, persisted chroma_db re-indexed)
+==============================================================================
+  E08 query: My UPI payment failed twice. How many times can I retry?
+  expected facts: ['3 times']
+  [fixed] retrieved: [('KB-08::fixed::00', 0.5611), ('KB-08::fixed::01', 0.5567), ('KB-08::fixed::02', 0.4974)]
+  [sentence] retrieved: [('KB-08::sentence::02', 0.6228), ('KB-08::sentence::04', 0.5777), ('KB-08::sentence::00', 0.5644)]
+  retrieved: [('KB-08::fixed::00', 0.5611), ('KB-08::fixed::01', 0.5567), ('KB-08::fixed::02', 0.4974)]; asked categories: []
+    0.6228 category:kept    in-margin  subject=- | Once all 3 retries have also failed, the customer should switch to another payment me
+    0.5644 category:kept    in-margin  subject=- | If the first payment attempt fails, the order is not placed and the customer can retr
+    0.4793 category:kept    OUT-margin subject=- | If money was debited for a failed payment, it is automatically reversed to the origin
+    0.2326 category:kept    OUT-margin subject=- | Cash on delivery is available only for orders up to ₹10,000
+  original reply (KB-08 v1): Policy information (source: KB-08): After 3 failed attempts the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery.
+  pipeline reply (KB-08 v2): Policy information (source: KB-08): Once all 3 retries have also failed, the customer should switch to another payment method such as UPI, a different card, net banking or cash on delivery. If the first payment attempt fails, the order is not placed and the customer can retry the payment up to 3 more times within 30 minutes while the cart prices stay locked.
+  citations: [['KB-08'], ['KB-08']]  grounded=True rejected_claims=[]
+  fact '3 times' (counts retries) v1=False v3=True | Policy information (source: KB-08): Once all 3 retries have also failed, the customer should switch to another
+  fact '3 times' (counts retries) v1=False v3=False | Policy information (source: KB-08): After 3 failed attempts the customer should switch to another payment meth
+  fact '3 times' (counts retries) v1=False v3=True | You can make 3 additional retries.
+  fact '3 times' (counts retries) v1=False v3=False | You get 3 attempts in total.
+  fact '3 times' (counts retries) v1=False v3=False | You get four attempts in total.
+  fact '3 times' (counts retries) v1=False v3=False | You can make 2 additional retries.
+  fact '3 times' (counts retries) v1=False v3=False | You can make 4 additional retries.
+  fact '3 times' (counts retries) v1=False v3=False | You can retry the payment up to 3 more times.
+
+==============================================================================
+E05: category-subject filter decisions (trimmer = Electronics)
+==============================================================================
+  KB-05 s1: Electronics come with a 12-month manufacturer warranty from the delivery date, and claims are handled at the brand's authorised service centre with Nykaa support helping to raise the claim.
+  KB-05 s2: Home appliances and kitchen tools carry a 6-month warranty against manufacturing defects, while home decor and textiles carry no warranty.
+  KB-05 s3: Footwear has a 60-day warranty against sole separation and broken stitching caused by manufacturing faults.
+  KB-05 s4: Apparel and Beauty products carry no warranty and are covered only by their return window and the damaged-item claim process.
+  KB-05 s5: No warranty covers physical damage, liquid damage, misuse or repairs done by an unauthorised person.
+  expected facts: {'behaviour': 'answer', 'parts': ['policy'], 'facts': ['12-month'], 'forbidden': ['7 days']}
+  retrieved: [('KB-05::fixed::00', 0.5005), ('KB-05::fixed::02', 0.4557), ('KB-05::fixed::01', 0.4286)]; asked categories: ['Electronics']
+    0.4659 category:kept    in-margin  subject=['Electronics'] | Electronics come with a 12-month manufacturer warranty from the delivery date, and cl
+    0.4617 category:DROPPED in-margin  subject=['Home'] | Home appliances and kitchen tools carry a 6-month warranty against manufacturing defe
+    0.4224 category:DROPPED in-margin  subject=['Apparel', 'Beauty'] | Apparel and Beauty products carry no warranty and are covered only by their return wi
+    0.4166 category:kept    in-margin  subject=- | No warranty covers physical damage, liquid damage, misuse or repairs done by an unaut
+    0.3454 category:DROPPED OUT-margin subject=['Footwear'] | Footwear has a 60-day warranty against sole separation and broken stitching caused by
+
+==============================================================================
+Versioned evaluation (scripts/run_evaluation.py): original results are never rewritten
+==============================================================================
+ID   status          orig(v1)  r1(v1)  r1(v3)  r2(v1)  r2(v3)  reply
+E01  answered        1555      5555    5555    5555    5555    Policy information (source: KB-01): Apparel can be returned 
+E02  answered        5555      5555    5555    5555    5555    Policy information (source: KB-02): Alternatively, a COD ref
+E03  answered        5555      5555    5555    5555    5555    Policy information (source: KB-03): Domestic orders to metro
+E04  answered        5555      5555    5555    5555    5555    Policy information: A free reverse pickup can be requested f
+E05  answered        5555      5555    5555    5555    5555    Policy information (source: KB-05): Electronics come with a 
+E06  answered        5555      5555    5555    5555    5555    Policy information (source: KB-06): Once an order is Shipped
+E07  answered        5555      5555    5555    5555    5555    Policy information (source: KB-07): Each point is worth ₹1 a
+E08  answered        1555      1555    1555    1555    5555    Policy information (source: KB-08): Once all 3 retries have 
+E09  answered        5555      5555    5555    5555    5555    Policy information (source: KB-09): Size exchanges are offer
+E10  answered        5555      5555    5555    5555    5555    Policy information (source: KB-10): Items that arrive damage
+E11  answered        5555      5555    5555    5555    5555    Policy information (source: KB-11): International delivery i
+E12  answered        3555      5555    5555    5555    5555    Policy information (source: KB-12): Cases still unresolved a
+E13  fallback        5555      5555    5555    5555    5555    I don't have sufficient information in my knowledge base to 
+E14  blocked         5555      5555    5555    5555    5555    I can only help with Nykaa orders and policies. Your message
+E15  answered        5555      5555    5555    5555    5555    Order information: No order found with record_id ORD-9999. N
+AVERAGES original (KB-08 v1, rubric v1): {'accuracy': 4.3333, 'grounding': 5, 'completeness': 5, 'safety': 5}
+AVERAGES r1 (KB-08 v1), rubric v1 (original): {'accuracy': 4.7333, 'grounding': 5, 'completeness': 5, 'safety': 5}
+AVERAGES r1 (KB-08 v1), rubric v3 (revised): {'accuracy': 4.7333, 'grounding': 5, 'completeness': 5, 'safety': 5}
+AVERAGES r2 (KB-08 v2), rubric v1 (original): {'accuracy': 4.7333, 'grounding': 5, 'completeness': 5, 'safety': 5}
+AVERAGES r2 (KB-08 v2), rubric v3 (revised): {'accuracy': 5, 'grounding': 5, 'completeness': 5, 'safety': 5}
+ORIGINAL AND r1 FILES SHA-256 unchanged: {'evaluation/evaluation_results.json': '52952c90b5456b1c16af4f9188e65a85c99a5c94aa58c707435d388ef33d48ef', 'evaluation/EVALUATION_REPORT.md': '40e60a1f54e37e3c64344813b966d44a593701888f713f288b85b1cdbcd573bd', 'evaluation/test_queries.json': '3699ac04647a6b552c8432caae2fe134aa45ad472551ad771dba77c14fdd7565', 'evaluation/remediation/evaluation_results_r1_rubric_v1.json': 'bdf4535e3a1fceb5e4f0b1cc6a5588fa8156cd92f0114afd8dd3ba908e225592', 'evaluation/remediation/evaluation_results_r1_rubric_v2.json': 'b2205cfa07630437977176340444be168706ddb0d989cd4c9c8eb4a9999366d6', 'evaluation/remediation/evaluation_results_r1_rubric_v3.json': '685c730f1faeead88fc75a9d6379f5d636aeb5b41991b6aa8c804532f001c51b', 'evaluation/remediation/EVALUATION_REPORT_REMEDIATION.md': 'b0f4720853adaaf7c865262c08f1b772c8235d1ac83fcad8103d2399134cf13b'}
+
+OUTBOUND NETWORK ATTEMPTS DURING THIS RUN (socket guard): []
