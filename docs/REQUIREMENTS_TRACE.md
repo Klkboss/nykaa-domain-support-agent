@@ -1,7 +1,7 @@
 # Requirements traceability
 
 Source of truth: [assignment.md](assignment.md) (unmodified). Each row quotes or closely paraphrases one
-requirement, with its spec line. "Phase" is the build phase from the owner's plan in PROJECT_STATUS.md.
+requirement, with its spec line. "Phase" is the build phase from the owner's plan.
 
 Status levels (each one includes the one before it):
 - **OPEN**: not built.
@@ -13,7 +13,7 @@ Status levels (each one includes the one before it):
 
 | ID | Requirement (spec line) | Phase | Evidence | Status |
 |---|---|---|---|---|
-| G1 | One public GitHub repo containing dataset, RAG core, crew, AutoGen review, FastAPI (L23-25, L276-280) | 14 | repo URL | OPEN |
+| G1 | One public GitHub repo containing dataset, RAG core, crew, AutoGen review, FastAPI (L23-25, L276-280) | 14 | https://github.com/Klkboss/nykaa-domain-support-agent | IMPLEMENTED |
 | G2 | README top: states **Nykaa (E-commerce & Retail)** track (L31-32) | final | README.md line 3: "**Track: Nykaa (E-commerce & Retail).**" (final audit) | VERIFIED |
 | G3 | README top: exact dataset design choices: seed, category/status weights, amount range (L32-34) | 1, 14 | README.md "Dataset design choices" | VERIFIED |
 | G4 | No images/screenshots/PDFs/slides/video/audio; deliverables are code or text (L35-37) | all | Final audit: every tracked file is text (.py/.md/.json/.jsonl/.txt/config); no image, PDF, media or binary file is tracked or was ever committed | VERIFIED |
@@ -67,7 +67,7 @@ Status levels (each one includes the one before it):
 
 | ID | Requirement (spec line) | Phase | Evidence | Status |
 |---|---|---|---|---|
-| — | Retrieval uses the **recommended** chunking collection as fixed input (L131-132) | 5 | app/tools | OPEN |
+| — | Retrieval uses the **recommended** chunking collection as fixed input (L131-132) | 5 | app/tools/crew_tools.py uses `RECOMMENDED_STRATEGY = "fixed"` | IMPLEMENTED |
 | T6.1 | `check_order_status(record_id: str) -> dict` with `status`, `order_value_inr`, `escalation_score` (L136-139) | 4 | **Source:** app/tools/order_lookup.py `check_order_status` over `data.dataset.ORDERS`; returns `status`, `order_value_inr`, `escalation_score` (+ `escalation_recommended`, a documented design choice). **Tests:** tests/test_order_lookup.py: test_every_order_is_looked_up_correctly[×50], test_every_status_is_returned_for_some_order[×5], test_known_record_example, test_result_exposes_only_required_fields_and_is_a_copy, test_deterministic_repeated_execution. **Evidence:** evaluation/transcripts/phase4_order_lookup.txt; evaluation/escalation_analysis.json §2 | VERIFIED |
 | T6.2 | `escalation_score` in [0,1] combining `delayed_shipment` with normalised recency from `days_since_created`; **not a bare boolean OR** (L139-141, L247) | 4 | `0.6 * delayed_shipment + 0.4 * (days_since_created / 30)`, in [0, 1]. **Tests:** test_score_exact_values[×7], test_score_range_and_ordering_over_all_inputs, test_not_a_bare_boolean_or (62 distinct values), test_missing_or_invalid_score_inputs_raise[×9], test_incomplete_record_is_not_silently_scored. **Evidence:** evaluation/transcripts/phase4_order_lookup.txt; evaluation/escalation_analysis.json §1-2 | VERIFIED |
 | T6.3 | Exact formula + escalation threshold justified from own dataset distribution (e.g. percentile) (L141-143) | 4 | Threshold 0.78 = 0.6 + 0.4 × 13.5/30, where 13.5 = the median `days_since_created` of ORDERS → escalate delayed orders aged 14+ days (4/50 = 8%: ORD-1016, -1022, -1029, -1045). README "Order lookup and escalation score". **Tests:** test_threshold_boundary, test_threshold_is_derived_from_the_dataset_median, test_escalation_levels_across_the_dataset, test_saved_escalation_analysis_matches_live_results. **Evidence:** evaluation/transcripts/phase4_order_lookup.txt; evaluation/escalation_analysis.json §1-2 | VERIFIED |

@@ -191,7 +191,7 @@ truthful and versioned.
 
 **How it is tested:**
 - The escalation score and threshold are tested in test_order_lookup.py.
-- The trace and the approvals are process controls, recorded in git history and PROJECT_STATUS.md, not tested
+- The trace and the approvals are process controls, recorded in the phase checklists and reports, not tested
   by code.
 
 **Limitations:** these are process controls of a capstone project, not an operating organisation's procedures.

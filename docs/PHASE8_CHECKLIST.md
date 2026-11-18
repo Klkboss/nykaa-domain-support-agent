@@ -1,6 +1,6 @@
 # Phase 8 checklist: AutoGen review + AI governance (spec Tasks 14-15)
 
-Written and committed before any code (commit `ae39635`, first in PROJECT_STATUS.md; copied here unchanged to match the earlier phases' docs/PHASEn_CHECKLIST.md files).
+Written before any code (copied here unchanged to match the earlier phases' docs/PHASEn_CHECKLIST.md files).
 
 Scope: spec Part 4 Tasks 14 and 15 (assignment.md L198-225) and the Part 4 acceptance bullets 1-2 (L266-270). Task 16 (caching) is NOT part of Phase 8.
 
