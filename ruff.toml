@@ -1,0 +1,10 @@
+# v2 lint policy: BLOCKING on new v2 code (scripts/check_v2.py lists the paths), REPORT-ONLY on the approved
+# capstone code (`ruff check . --exit-zero`), so graded files are never restyled.
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv", "models", "chroma_db", ".crewai_storage", "logs"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+# B006: AutoGen's ChatCompletionClient interface itself declares `tools=[]` / `extra_create_args={}` defaults.
+ignore = ["B006"]

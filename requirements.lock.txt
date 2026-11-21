@@ -145,6 +145,7 @@ sympy==1.14.0
 tenacity==9.2.1
 textual==8.2.8
 threadpoolctl==3.7.0
+tiktoken==0.14.0
 tokenizers==0.23.3
 tomli==2.0.2
 tomli_w==1.1.0

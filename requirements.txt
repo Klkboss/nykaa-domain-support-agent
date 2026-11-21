@@ -10,6 +10,7 @@ langchain-core==1.7.3
 fastapi==0.162.0
 uvicorn==0.54.0
 httpx==0.28.1
+tiktoken==0.14.0  # v2: needed by autogen_ext.models.openai (the autogen-ext[openai] extra)
 pydantic==2.12.5
 python-dotenv==1.2.2
 pytest==9.2.0
