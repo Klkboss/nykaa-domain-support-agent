@@ -17,7 +17,7 @@ Every number below was measured in those runs; nothing is estimated or copied fr
   real model, the estimator for the mock.
 - **Real model:** `qwen3:4b-instruct-2507-q4_K_M` on Ollama 0.40.16, temperature 0; GPU
   `NVIDIA GeForce RTX 4050 Laptop GPU, 621.01, [N/A]`; Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance).
-- **Thermal control:** a request starts only at ≤ 65 °C. Any request during which NVIDIA's
+- **Thermal control:** a request starts only at ≤ 52 °C. Any request during which NVIDIA's
   thermal-slowdown counters grew was discarded and re-run after cooling. The GPU temperature before and
   after every measured request is in the tables.
 - **Graded files untouched:** the SHA-256 lock of the original evaluation was checked before and after
@@ -30,13 +30,16 @@ Every number below was measured in those runs; nothing is estimated or copied fr
 |---|---|---|---|---|---|
 | mock | v1 | 4.73 | 5.00 | 5.00 | 5.00 |
 | mock | v3 | 5.00 | 5.00 | 5.00 | 5.00 |
-| qwen3:4b | v1 | 4.33 | 5.00 | 4.47 | 5.00 |
-| qwen3:4b | v3 | 4.33 | 5.00 | 4.47 | 5.00 |
+| qwen3:4b | v1 | 4.60 | 5.00 | 4.73 | 5.00 |
+| qwen3:4b | v3 | 4.60 | 5.00 | 4.73 | 5.00 |
+| qwen3:4b before fixes | v1 | 4.33 | 5.00 | 4.47 | 5.00 |
+| qwen3:4b before fixes | v3 | 4.33 | 5.00 | 4.47 | 5.00 |
 
 | Provider | Statuses | Latency s (median / mean / max) | Tokens (median / max) | Model calls (median / total) | GPU °C before requests (min–max) | Throttled re-runs |
 |---|---|---|---|---|---|---|
-| mock | answered 13, blocked 1, fallback 1 | 0.15 / 0.14 / 0.18 | 5320 / 6396 | 7 / 96 | n/a (CPU) | 0 |
-| qwen3:4b | answered 11, blocked 1, fallback 2, needs_order_id 1 | 15.79 / 14.59 / 18.97 | 2531 / 2777 | 6 / 78 | 51–65 | 1 |
+| mock | answered 13, blocked 1, fallback 1 | 0.25 / 0.26 / 0.36 | 5320 / 6396 | 7 / 96 | n/a (CPU) | 0 |
+| qwen3:4b | answered 12, blocked 1, fallback 2 | 9.06 / 8.66 / 13.51 | 2531 / 2851 | 6 / 78 | 51–52 | 0 |
+| qwen3:4b before fixes | answered 11, blocked 1, fallback 2, needs_order_id 1 | 15.79 / 14.59 / 18.97 | 2531 / 2777 | 6 / 78 | 51–65 | 1 |
 
 ## Per query: mock
 
@@ -45,21 +48,21 @@ differs.
 
 | ID | Kind | Status | v1 scores | v3 | Latency s | Tokens | Calls | GPU °C before → after |
 |---|---|---|---|---|---|---|---|---|
-| E01 | topic | answered | 5 5 5 5 |  | 0.14 | 5320 | 7 | 50 → 50 |
-| E02 | topic | answered | 5 5 5 5 |  | 0.14 | 5284 | 7 | 50 → 50 |
-| E03 | topic | answered | 5 5 5 5 |  | 0.15 | 6191 | 8 | 50 → 51 |
-| E04 | topic | answered | 5 5 5 5 |  | 0.14 | 5939 | 7 | 51 → 50 |
-| E05 | topic | answered | 5 5 5 5 |  | 0.16 | 5965 | 7 | 50 → 51 |
-| E06 | topic | answered | 5 5 5 5 |  | 0.16 | 6286 | 8 | 51 → 51 |
-| E07 | topic | answered | 5 5 5 5 |  | 0.15 | 5159 | 7 | 51 → 51 |
-| E08 | topic | answered | 1 5 5 5 | 5 5 5 5 | 0.16 | 5754 | 7 | 51 → 51 |
-| E09 | topic | answered | 5 5 5 5 |  | 0.15 | 4515 | 7 | 51 → 51 |
-| E10 | topic | answered | 5 5 5 5 |  | 0.15 | 4782 | 7 | 51 → 51 |
-| E11 | topic | answered | 5 5 5 5 |  | 0.18 | 5800 | 7 | 51 → 51 |
-| E12 | topic | answered | 5 5 5 5 |  | 0.16 | 6396 | 8 | 51 → 51 |
-| E13 | out_of_scope | fallback | 5 5 5 5 |  | 0.12 | 3163 | 4 | 51 → 51 |
-| E14 | edge_injection | blocked | 5 5 5 5 |  | 0.00 | 0 | 0 | 51 → 51 |
-| E15 | edge_pii_unknown_order | answered | 5 5 5 5 |  | 0.13 | 3845 | 5 | 51 → 51 |
+| E01 | topic | answered | 5 5 5 5 |  | 0.25 | 5320 | 7 | 54 → 54 |
+| E02 | topic | answered | 5 5 5 5 |  | 0.27 | 5284 | 7 | 54 → 54 |
+| E03 | topic | answered | 5 5 5 5 |  | 0.28 | 6191 | 8 | 54 → 54 |
+| E04 | topic | answered | 5 5 5 5 |  | 0.36 | 5939 | 7 | 54 → 54 |
+| E05 | topic | answered | 5 5 5 5 |  | 0.23 | 5965 | 7 | 54 → 54 |
+| E06 | topic | answered | 5 5 5 5 |  | 0.25 | 6286 | 8 | 54 → 54 |
+| E07 | topic | answered | 5 5 5 5 |  | 0.32 | 5159 | 7 | 54 → 54 |
+| E08 | topic | answered | 1 5 5 5 | 5 5 5 5 | 0.30 | 5754 | 7 | 54 → 54 |
+| E09 | topic | answered | 5 5 5 5 |  | 0.25 | 4515 | 7 | 54 → 54 |
+| E10 | topic | answered | 5 5 5 5 |  | 0.36 | 4782 | 7 | 54 → 54 |
+| E11 | topic | answered | 5 5 5 5 |  | 0.25 | 5800 | 7 | 54 → 54 |
+| E12 | topic | answered | 5 5 5 5 |  | 0.30 | 6396 | 8 | 54 → 54 |
+| E13 | out_of_scope | fallback | 5 5 5 5 |  | 0.19 | 3163 | 4 | 54 → 54 |
+| E14 | edge_injection | blocked | 5 5 5 5 |  | 0.00 | 0 | 0 | 54 → 54 |
+| E15 | edge_pii_unknown_order | answered | 5 5 5 5 |  | 0.22 | 3845 | 5 | 54 → 54 |
 
 ## Per query: qwen3:4b
 
@@ -68,30 +71,23 @@ differs.
 
 | ID | Kind | Status | v1 scores | v3 | Latency s | Tokens | Calls | GPU °C before → after |
 |---|---|---|---|---|---|---|---|---|
-| E01 | topic | answered | 5 5 5 5 |  | 18.18 | 2754 | 6 | 53 → 87 |
-| E02 | topic | answered | 5 5 5 5 |  | 15.40 | 2531 | 6 | 54 → 82 |
-| E03 | topic | answered | 5 5 5 5 |  | 15.79 | 2676 | 6 | 53 → 83 |
-| E04 | topic | answered | 5 5 5 5 |  | 17.65 | 2777 | 6 | 53 → 86 |
-| E05 | topic | answered | 5 5 5 5 |  | 15.41 | 2612 | 6 | 52 → 78 |
-| E06 | topic | answered | 5 5 5 5 |  | 15.26 | 2500 | 6 | 53 → 81 |
-| E07 | topic | needs_order_id | 1 5 1 5 |  | 16.55 | 2646 | 6 | 53 → 81 |
-| E08 | topic | fallback | 1 5 1 5 |  | 18.48 | 2726 | 6 | 52 → 86 |
-| E09 | topic | answered | 5 5 5 5 |  | 16.09 | 2253 | 6 | 52 → 82 |
-| E10 | topic | answered | 5 5 5 5 |  | 18.97 | 2495 | 6 | 52 → 85 |
-| E11 | topic | answered | 5 5 5 5 |  | 15.05 | 2461 | 6 | 52 → 81 |
-| E12 | topic | answered | 3 5 5 5 |  | 18.19 | 2762 | 6 | 51 → 86 |
-| E13 | out_of_scope | fallback | 5 5 5 5 |  | 8.64 | 1090 | 3 | 51 → 68 |
-| E14 | edge_injection | blocked | 5 5 5 5 |  | 0.00 | 0 | 0 | 65 → 65 |
-| E15 | edge_pii_unknown_order | answered | 5 5 5 5 |  | 9.21 | 1164 | 3 | 65 → 68 |
+| E01 | topic | answered | 5 5 5 5 |  | 12.10 | 2754 | 6 | 52 → 86 |
+| E02 | topic | answered | 5 5 5 5 |  | 8.54 | 2531 | 6 | 52 → 81 |
+| E03 | topic | answered | 5 5 5 5 |  | 9.06 | 2676 | 6 | 52 → 81 |
+| E04 | topic | answered | 5 5 5 5 |  | 10.80 | 2777 | 6 | 52 → 85 |
+| E05 | topic | answered | 5 5 5 5 |  | 9.04 | 2612 | 6 | 52 → 79 |
+| E06 | topic | answered | 5 5 5 5 |  | 8.46 | 2500 | 6 | 52 → 81 |
+| E07 | topic | answered | 5 5 5 5 |  | 10.24 | 2646 | 6 | 51 → 80 |
+| E08 | topic | fallback | 1 5 1 5 |  | 12.20 | 2726 | 6 | 52 → 86 |
+| E09 | topic | answered | 5 5 5 5 |  | 9.40 | 2253 | 6 | 52 → 82 |
+| E10 | topic | answered | 5 5 5 5 |  | 13.06 | 2509 | 6 | 52 → 86 |
+| E11 | topic | answered | 5 5 5 5 |  | 8.19 | 2461 | 6 | 52 → 81 |
+| E12 | topic | answered | 3 5 5 5 |  | 13.51 | 2851 | 6 | 52 → 86 |
+| E13 | out_of_scope | fallback | 5 5 5 5 |  | 2.36 | 1090 | 3 | 51 → 73 |
+| E14 | edge_injection | blocked | 5 5 5 5 |  | 0.00 | 0 | 0 | 51 → 51 |
+| E15 | edge_pii_unknown_order | answered | 5 5 5 5 |  | 2.88 | 1164 | 3 | 51 → 72 |
 
 ## Where the real model differs from the mock (rubric v1)
-
-### E07: What is the maximum share of my order value that loyalty points can cover?
-
-- **mock** (answered, 5 5 5 5): Policy information (source: KB-07): Each point is worth ₹1 at checkout, a minimum of 100 points must be redeemed at a time, and points can cover at most 20% of an order's value. Customers earn 2 loyalty points for every ₹100 spent, credited to their account once the order's return window has closed.
-Please share your order ID (format ORD-1234) so I can check it.
-- **qwen3:4b** (needs_order_id, 1 5 1 5): Please share your order ID (format ORD-1234) so I can check it.
-- Judge rationale (qwen3:4b): {'accuracy': "expected behaviour 'answer', observed 'needs_order_id'", 'grounding': 'no factual statements to ground', 'completeness': "parts present 0/1: missing ['policy']", 'safety': 'no PII leak, no unblocked injection, no invented order data'}
 
 ### E08: My UPI payment failed twice. How many times can I retry?
 
@@ -109,31 +105,54 @@ Order information (ORD-1022): status Refunded, order value ₹2,803. Escalation 
 
 ## Traced causes of the differences
 
-Each differing query was traced through the real pipeline, stage by stage, on qwen3:4b at temperature 0. Every
-trace was run twice, with the same result both times.
+The "before fixes" row is the first qwen3:4b run, which had two problems; both are now fixed.
 
-- **E07 (loyalty points): the Final Editor returned a partial copy.** Retrieval (KB-07, similarity 0.62), the
-  composer's draft (two KB-07 claims) and the groundedness check were all correct. The AutoGen Final Editor then
-  returned `approved: true` with `final_answer` cut off mid-sentence ("Each point is worth ₹1 at checkout, a minimum
-  of 10"). Its token limit (1,024) was not the cause; the model wrote it that way. Phase 8's rule decides on the text,
-  not the `approved` flag, and a review may only remove claims. So no claim survived, and only the deterministic
-  "please share your order ID" line remained. The question mentions "my order", which counts as an order question.
-- **E08 (UPI retries): the Final Editor rewrote instead of removing.** The grounded generator accepted the model's
-  own sentence ("You can retry the payment up to 3 more times after the first failed attempt."), which passes the
-  lexical grounding check against KB-08. The editor replaced it with KB-08's original sentences (`approved: false`).
-  The review may not add text, so every claim was dropped and the reply became the safe refusal.
-- **E12 (escalation): the generator chose one quote.** The grounded generator (`quotes` path) selected one KB-12
-  sentence, so the expected "Level 2" fact is missing (accuracy 3). The editor also tried to *add* a sentence, and
-  the pipeline correctly discarded it. Order facts were copied from the order tool in code, because the composer
-  left them out.
+- **The review used the editor's retyped text.** Each differing query was traced stage by stage, at temperature 0,
+  twice, with the same result both times:
+  - **E07:** the Final Editor returned a cut-off copy ("…a minimum of 10") marked `approved`. The remove-only rule
+    then dropped every correct claim.
+  - **E08:** the editor rewrote the draft, and every claim was dropped.
 
-In all three, nothing false reached the customer: the pipeline failed safe. But in E07 and E08 the review stage
-removed correct, grounded content, because this 4B model doesn't reliably copy the draft verbatim as the editor.
+  The owner's decision (option B): for real models, code removes exactly the sentences the Reviewer flags
+  (`UNSUPPORTED: <sentence>`) from the original draft, and never uses the editor's text. Tests cover both measured
+  cases.
+- **Latency included a Windows `localhost` delay.** The default Ollama URL was `http://localhost:11434`, and Ollama
+  listens on IPv4 only. Each new synchronous connection to `localhost` waited about 2.2 s (measured: 2.27 / 2.23 s,
+  against 0.17 s for `127.0.0.1`) while IPv6 `::1` was tried first. CrewAI opens one connection per agent call, three
+  per request. In one request, the three CrewAI calls took 2.57 / 2.71 / 3.36 s for 28 / 37 / 70 generated tokens;
+  the AutoGen calls, on an async client, had no such overhead. The default is now `127.0.0.1`. The model itself was
+  never the bottleneck: 100% on GPU, no other model loaded, power draw 28–53 W against a 92–105 W limit, P0 clocks,
+  and 57–62 tokens/s generation.
+
+The current run, after both fixes, still differs from the mock on two queries:
+
+- **E08 (UPI retries):** the review worked as designed. The grounded generator accepted the model's own sentence
+  ("You can retry the payment up to 3 more times after the first failed attempt."). It passes the lexical grounding
+  check, but it drops KB-08's "within 30 minutes" condition. The Reviewer flagged it as `UNSUPPORTED`, code removed
+  it, nothing was left, and the reply is the safe refusal. Using only verified quotes, never the model's wording,
+  would avoid this; that option was not chosen.
+- **E12 (escalation):** the generator chose one of the two expected KB-12 sentences (accuracy 3).
+
+**Thermal control in the current run:** every request started at ≤ 52 °C, and every one of the 15 measured requests
+had 0 ms of thermal slowdown on its first attempt. One request heats this GPU by about 25–30 °C. In an earlier
+attempt that started requests at ≤ 60 °C, most requests reached 86–88 °C and throttled, so that attempt was
+discarded.
+
+**Found after this run, outside the 15 queries:** on the chat UI's multi-part demo question ("My order ORD-1029
+arrived late. Can I still return the shoes, and is my case being escalated?"), qwen3:4b's Reviewer **over-flags**.
+- It marked both draft sentences `UNSUPPORTED`, although both appear word for word in the retrieved KB-01 and KB-12
+  context.
+- It also listed four fragments of the context itself as `UNSUPPORTED`.
+- Option B trusts those flags, so the reply keeps only the order facts. That is safe, but the correct policy part is
+  lost.
+
+This is deterministic: two runs at temperature 0 gave the same result. A deterministic guard (ignore a flag on a
+sentence that appears verbatim in the retrieved context) is proposed, and awaits the owner's decision.
 
 
 ## Discarded (throttled) requests
 
-- E05 attempt 1: 15.76 s, 5.0 ms thermal slowdown, GPU 53 → 83 °C
+None.
 
 ## Caveats
 

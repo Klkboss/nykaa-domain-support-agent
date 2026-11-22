@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import platform
 import statistics
 import subprocess
@@ -38,8 +39,10 @@ from scripts.run_evaluation import METRICS, QUERIES_PATH, run_case, score, verif
 OUT_DIR = ROOT / "evaluation" / "v2"
 REPORT = ROOT / "evaluation" / "V2_PROVIDER_COMPARISON.md"
 R2_V1 = ROOT / "evaluation" / "remediation" / "evaluation_results_r2_kb08v2_rubric_v1.json"
-COOL_C = 65.0  # start a real-model request only at or below this GPU temperature
-MAX_ATTEMPTS = 3
+# Start a real-model request only at or below this GPU temperature. 52 C: one request adds ~25-30 C on this laptop,
+# and thermal slowdown starts near 86 C (measured); starting at 60 C throttled most requests.
+COOL_C = float(os.environ.get("EVAL_COOL_C", "52"))
+MAX_ATTEMPTS = int(os.environ.get("EVAL_MAX_ATTEMPTS", "4"))
 GPU_FIELDS = ("temperature.gpu", "clocks_event_reasons_counters.sw_thermal_slowdown",
               "clocks_event_reasons_counters.hw_thermal_slowdown", "clocks_event_reasons_counters.sw_power_cap")
 
@@ -63,7 +66,8 @@ def wait_until_cool(limit_s: float = 900) -> float:
 
 def environment(provider: str, settings: Any) -> dict[str, Any]:
     env: dict[str, Any] = {"provider": provider, "model": settings.model or "deterministic mock",
-                           "python": platform.python_version(), "os": platform.platform()}
+                           "python": platform.python_version(), "os": platform.platform(),
+                           "base_url": settings.base_url, "start_at_or_below_c": COOL_C, "max_attempts": MAX_ATTEMPTS}
     if provider != "mock":
         with urllib.request.urlopen(settings.base_url.removesuffix("/v1") + "/api/version", timeout=10) as r:
             env["ollama_version"] = json.load(r)["version"]
@@ -166,6 +170,10 @@ def report() -> None:
     runs = {p: json.loads((OUT_DIR / f"provider_comparison_{p}.json").read_text(encoding="utf-8"))
             for p in ("mock", "ollama")}
     mock, real = runs["mock"], runs["ollama"]
+    before_path = OUT_DIR / "provider_comparison_ollama_before_fixes.json"
+    summary = [("mock", mock), ("qwen3:4b", real)]
+    if before_path.exists():  # the earlier run, kept to show the effect of the two fixes (see the notes below)
+        summary.append(("qwen3:4b before fixes", json.loads(before_path.read_text(encoding="utf-8"))))
     r2 = {r["id"]: r for r in json.loads(R2_V1.read_text(encoding="utf-8"))["results"]}
     mock_matches_r2 = all(r["scores_v1"] == r2[r["id"]]["scores"] and r["reply"] == r2[r["id"]]["reply"]
                           for r in mock["rows"])
@@ -187,7 +195,8 @@ def report() -> None:
         "  real model, the estimator for the mock.",
         f"- **Real model:** `{env['model']}` on Ollama {env.get('ollama_version', '?')}, temperature 0; GPU",
         f"  `{env.get('gpu', '?')}`; {env.get('power_scheme', '?')}.",
-        f"- **Thermal control:** a request starts only at ≤ {COOL_C:.0f} °C. Any request during which NVIDIA's",
+        f"- **Thermal control:** a request starts only at ≤ {env.get('start_at_or_below_c', COOL_C):.0f} °C. Any "
+        "request during which NVIDIA's",
         "  thermal-slowdown counters grew was discarded and re-run after cooling. The GPU temperature before and",
         "  after every measured request is in the tables.",
         "- **Graded files untouched:** the SHA-256 lock of the original evaluation was checked before and after",
@@ -197,14 +206,14 @@ def report() -> None:
         "## Averages", "",
         "| Provider | Rubric | Accuracy | Grounding | Completeness | Safety |", "|---|---|---|---|---|---|",
     ]
-    for name, run in (("mock", mock), ("qwen3:4b", real)):
+    for name, run in summary:
         for v in ("v1", "v3"):
             a = run["averages"][v]
             lines.append(f"| {name} | {v} | " + " | ".join(f"{a[m]:.2f}" for m in METRICS) + " |")
     lines += ["", "| Provider | Statuses | Latency s (median / mean / max) | Tokens (median / max) | "
                   "Model calls (median / total) | GPU °C before requests (min–max) | Throttled re-runs |",
               "|---|---|---|---|---|---|---|"]
-    for name, run in (("mock", mock), ("qwen3:4b", real)):
+    for name, run in summary:
         m = [r["measured"] for r in run["rows"]]
         statuses = {}
         for r in run["rows"]:

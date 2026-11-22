@@ -56,7 +56,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.14,
+        "latency_s": 0.25,
         "cooled_for_s": 0.0,
         "tokens": 5320,
         "model_calls": {
@@ -67,8 +67,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.4,
-        "gpu_temp_after_c": 50.38,
+        "gpu_temp_before_c": 53.83,
+        "gpu_temp_after_c": 53.72,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -101,7 +101,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.14,
+        "latency_s": 0.27,
         "cooled_for_s": 0.0,
         "tokens": 5284,
         "model_calls": {
@@ -112,8 +112,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.38,
-        "gpu_temp_after_c": 50.43,
+        "gpu_temp_before_c": 53.72,
+        "gpu_temp_after_c": 53.95,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -146,7 +146,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.15,
+        "latency_s": 0.28,
         "cooled_for_s": 0.0,
         "tokens": 6191,
         "model_calls": {
@@ -157,8 +157,8 @@
           "review": 2,
           "total": 8
         },
-        "gpu_temp_before_c": 50.43,
-        "gpu_temp_after_c": 50.55,
+        "gpu_temp_before_c": 53.69,
+        "gpu_temp_after_c": 53.8,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -191,7 +191,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.14,
+        "latency_s": 0.36,
         "cooled_for_s": 0.0,
         "tokens": 5939,
         "model_calls": {
@@ -202,8 +202,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.55,
-        "gpu_temp_after_c": 50.49,
+        "gpu_temp_before_c": 53.8,
+        "gpu_temp_after_c": 53.83,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -236,7 +236,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.16,
+        "latency_s": 0.23,
         "cooled_for_s": 0.0,
         "tokens": 5965,
         "model_calls": {
@@ -247,8 +247,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.49,
-        "gpu_temp_after_c": 50.55,
+        "gpu_temp_before_c": 53.83,
+        "gpu_temp_after_c": 53.75,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -281,7 +281,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.16,
+        "latency_s": 0.25,
         "cooled_for_s": 0.0,
         "tokens": 6286,
         "model_calls": {
@@ -292,8 +292,8 @@
           "review": 2,
           "total": 8
         },
-        "gpu_temp_before_c": 50.55,
-        "gpu_temp_after_c": 50.52,
+        "gpu_temp_before_c": 53.75,
+        "gpu_temp_after_c": 53.8,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -326,7 +326,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.15,
+        "latency_s": 0.32,
         "cooled_for_s": 0.0,
         "tokens": 5159,
         "model_calls": {
@@ -337,8 +337,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.52,
-        "gpu_temp_after_c": 50.55,
+        "gpu_temp_before_c": 53.8,
+        "gpu_temp_after_c": 53.83,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -371,7 +371,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.16,
+        "latency_s": 0.3,
         "cooled_for_s": 0.0,
         "tokens": 5754,
         "model_calls": {
@@ -382,8 +382,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.55,
-        "gpu_temp_after_c": 50.57,
+        "gpu_temp_before_c": 53.83,
+        "gpu_temp_after_c": 53.86,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -416,7 +416,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.15,
+        "latency_s": 0.25,
         "cooled_for_s": 0.0,
         "tokens": 4515,
         "model_calls": {
@@ -427,8 +427,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.57,
-        "gpu_temp_after_c": 50.6,
+        "gpu_temp_before_c": 53.86,
+        "gpu_temp_after_c": 53.89,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -461,7 +461,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.15,
+        "latency_s": 0.36,
         "cooled_for_s": 0.0,
         "tokens": 4782,
         "model_calls": {
@@ -472,8 +472,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.6,
-        "gpu_temp_after_c": 50.63,
+        "gpu_temp_before_c": 53.89,
+        "gpu_temp_after_c": 53.91,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -506,7 +506,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.18,
+        "latency_s": 0.25,
         "cooled_for_s": 0.0,
         "tokens": 5800,
         "model_calls": {
@@ -517,8 +517,8 @@
           "review": 2,
           "total": 7
         },
-        "gpu_temp_before_c": 50.63,
-        "gpu_temp_after_c": 50.69,
+        "gpu_temp_before_c": 53.91,
+        "gpu_temp_after_c": 53.86,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -551,7 +551,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.16,
+        "latency_s": 0.3,
         "cooled_for_s": 0.0,
         "tokens": 6396,
         "model_calls": {
@@ -562,8 +562,8 @@
           "review": 2,
           "total": 8
         },
-        "gpu_temp_before_c": 50.74,
-        "gpu_temp_after_c": 50.74,
+        "gpu_temp_before_c": 53.86,
+        "gpu_temp_after_c": 53.91,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -596,7 +596,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.12,
+        "latency_s": 0.19,
         "cooled_for_s": 0.0,
         "tokens": 3163,
         "model_calls": {
@@ -607,8 +607,8 @@
           "review": 0,
           "total": 4
         },
-        "gpu_temp_before_c": 50.77,
-        "gpu_temp_after_c": 50.77,
+        "gpu_temp_before_c": 53.91,
+        "gpu_temp_after_c": 53.97,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -649,8 +649,8 @@
           "review": 0,
           "total": 0
         },
-        "gpu_temp_before_c": 50.77,
-        "gpu_temp_after_c": 50.83,
+        "gpu_temp_before_c": 53.97,
+        "gpu_temp_after_c": 53.97,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },
@@ -683,7 +683,7 @@
       },
       "measured": {
         "attempt": 1,
-        "latency_s": 0.13,
+        "latency_s": 0.22,
         "cooled_for_s": 0.0,
         "tokens": 3845,
         "model_calls": {
@@ -694,8 +694,8 @@
           "review": 0,
           "total": 5
         },
-        "gpu_temp_before_c": 50.83,
-        "gpu_temp_after_c": 50.83,
+        "gpu_temp_before_c": 53.97,
+        "gpu_temp_after_c": 54.0,
         "thermal_slowdown_ms": 0.0,
         "power_cap_ms": 0.0
       },

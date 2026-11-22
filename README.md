@@ -104,7 +104,7 @@ All are optional; `.env.example` lists them with comments. `.env` is never loade
 | `MOCK_LLM` | `true` | `true` forces the deterministic mock, whatever `LLM_PROVIDER` says |
 | `LLM_PROVIDER` | `mock` | `mock`, `ollama` or `openai_compatible` |
 | `LLM_MODEL` | provider default | model name (Ollama: `qwen3:4b-instruct-2507-q4_K_M`) |
-| `OLLAMA_BASE_URL` / `LLM_BASE_URL` | `http://localhost:11434` / none | server URL (`/v1` is added for Ollama) |
+| `OLLAMA_BASE_URL` / `LLM_BASE_URL` | `http://127.0.0.1:11434` / none | server URL (`/v1` is added for Ollama) |
 | `LLM_API_KEY` | none | only for servers that need one; never committed |
 | `LLM_TEMPERATURE`, `LLM_TIMEOUT_S`, `LLM_MAX_TOKENS` | `0`, `120`, `1024` | generation controls |
 | `LLM_MAX_RETRIES` | `0` for Ollama, `2` otherwise | transport retries (low, so a stopped server fails fast) |
@@ -198,6 +198,12 @@ The mock always behaved. Real models found these gaps, and each one is now handl
 - **Failures that multiplied.** CrewAI's agent retries tripled every timeout, so they are off on the real path, and
   Ollama gets no transport retries. Schema parsing moved from inside the agent to a server-side JSON schema plus a
   guardrail with one retry. Every failure ends in the polite reply.
+- **The review editor's retyped text.** On the 15-query evaluation, qwen3:4b, acting as the AutoGen Final Editor,
+  returned a cut-off copy of the draft marked "approved", or rewrote it. Because a review may only remove claims,
+  correct grounded answers were lost. Now, for real models, code reads the Reviewer's `UNSUPPORTED: <sentence>`
+  lines and removes exactly those sentences from the **original** draft; the editor's text is never used. It is
+  still remove-only. Unparseable or unmatched reviewer output removes all policy text (fail-safe). The mock is
+  unchanged.
 - **Provider error text in logs.** Error bodies are redacted at log-record creation, for every logger.
 - **Concurrency.** Each request's evidence is kept in a per-request `RequestTrace`, never in shared state, and the
   first history write of a session is an atomic upsert.
@@ -206,26 +212,32 @@ The mock always behaved. Real models found these gaps, and each one is now handl
 **The 15-query evaluation**, from [evaluation/V2_PROVIDER_COMPARISON.md](evaluation/V2_PROVIDER_COMPARISON.md):
 - The same queries, judge and rubrics as the graded evaluation. The judge is a deterministic rubric scorer, 1–5.
 - One measured request per query.
-- qwen3:4b requests started at ≤ 65 °C. Any request that hit a thermal slowdown was re-run (1 of 15); in all the
-  measured ones, NVIDIA's thermal and power-cap slowdown counters stayed at 0 ms.
+- In the qwen3:4b run, every request started at ≤ 52 °C, and all 15 measured requests had 0 ms of thermal slowdown.
 - The mock run reproduces the committed graded r2 results exactly.
 
-| Provider | Accuracy | Grounding | Completeness | Safety | Statuses | Latency s, median / max | Tokens, median | GPU °C at start |
-|---|---|---|---|---|---|---|---|---|
-| mock | 4.73 (v3: 5.00) | 5.00 | 5.00 | 5.00 | 13 answered, 1 fallback, 1 blocked | 0.15 / 0.18 | 5,320 (estimated) | n/a (CPU) |
-| qwen3:4b (Ollama, RTX 4050 Laptop) | 4.33 | 5.00 | 4.47 | 5.00 | 11 answered, 2 fallback, 1 needs ID, 1 blocked | 15.79 / 18.97 | 2,531 (reported) | 51–65 |
+| Provider | Accuracy | Grounding | Completeness | Safety | Statuses | Latency s, median / max | GPU °C at start |
+|---|---|---|---|---|---|---|---|
+| mock | 4.73 (v3: 5.00) | 5.00 | 5.00 | 5.00 | 13 answered, 1 fallback, 1 blocked | 0.25 / 0.36 | n/a (CPU) |
+| **qwen3:4b** (Ollama, RTX 4050 Laptop) | **4.60** | 5.00 | **4.73** | 5.00 | 12 answered, 2 fallback, 1 blocked | **9.06 / 13.51** | 51–52 |
+| qwen3:4b before the two fixes below | 4.33 | 5.00 | 4.47 | 5.00 | 11 answered, 2 fallback, 1 needs ID, 1 blocked | 15.79 / 18.97 | 51–65 |
 
-The real model scores lower on three queries, and each was traced stage by stage:
-- **E07 and E08:** the 4B model, acting as the AutoGen Final Editor, returned a partial copy of the draft or rewrote
-  it. Because a review may only *remove* claims, correct grounded content was dropped. Both failed safe (a request
-  for the order ID, and a refusal).
-- **E12:** the generator picked one of two expected sentences.
+The two fixes:
+- **Review:** code now removes only the sentences the Reviewer flags, so E07 is answered again.
+- **Latency:** the default Ollama URL is now `127.0.0.1` instead of `localhost`. On Windows each new connection to
+  `localhost` waited ~2.2 s for IPv6 first, and CrewAI opens three per request. That fix alone took the median from
+  15.8 s to 9.1 s.
+
+The model was never the bottleneck: it ran 100% on the GPU, with no other model loaded and power well under its
+limit.
+
+Two queries still differ from the mock:
+- **E08:** the reviewer correctly flagged the generator's own rewording of KB-08, so the reply is the safe refusal.
+- **E12:** the generator chose one of two expected sentences.
 
 Grounding and safety stay at 5.00: nothing unsupported or unsafe reached a reply.
 
-**The Stage B model comparison**, on 6 demo questions × 2 rounds ([evaluation/v2/](evaluation/v2/)). GPU temperature
-was not recorded in this run. The same code measured today, unthrottled, is about 2× slower: identical commits gave
-identical times in an A/B, so the machine differs and the code doesn't. The cause is not identified.
+**The Stage B model comparison**, on 6 demo questions × 2 rounds, against `127.0.0.1`
+([evaluation/v2/](evaluation/v2/)). GPU temperature was not recorded in this run.
 
 | Model | Expected status | Correct routing | Errors | Latency s, median / max | On GPU |
 |---|---|---|---|---|---|
@@ -234,26 +246,31 @@ identical times in an A/B, so the machine differs and the code doesn't. The caus
 | qwen2.5:7b-instruct | 8/12 | 6/12 | 3 | 18.67 / 23.99 | 82 % (spills to CPU) |
 
 ### Tests and CI
-- **782 tests:** the capstone's **664 are unchanged**, plus 118 v2 tests. They run offline with outbound network
+- **788 tests:** the capstone's **664 are unchanged**, plus 124 v2 tests. They run offline with outbound network
   blocked.
   - The 5 PostgreSQL tests run only with `TEST_DATABASE_URL`, and in CI against a service container.
   - `tests_live/` (4 smoke tests against a real Ollama) runs only with `LIVE_LLM=1`.
 - `scripts/check_v2.py` makes ruff and strict mypy blocking on new v2 code, and report-only on the capstone code.
-- **Known intermittent failure:** the capstone test `tests/test_cache.py::test_11_add_document_clears_the_cache`.
-  - It failed in 2 of 5 full runs in one batch, and passed in the 7 full runs after it.
-  - The failing batch overlapped with another process using the same Chroma store and the GPU.
-  - In one passing run, Chroma 1.5.9 raised `Error creating hnsw segment reader: Nothing found on disk` inside the
-    API's freshly built on-disk index.
-  - The root cause is not established. Replies degrade safely, to "policy search is temporarily unavailable".
-- **The v2 tests now use their own on-disk index** instead of the capstone's shared in-memory one, which Chroma can
-  break mid-process ("Error finding id"). They passed in every full run since.
+- **The v2 tests use their own on-disk Chroma index**, not the capstone's shared in-memory one, which Chroma 1.5.9
+  can break mid-process ("Error finding id").
 
 ### Demo and limits
 - [docs/DEMO_RECORDING.md](docs/DEMO_RECORDING.md): how to record a 1–2 minute demo of the chat UI on Windows.
 - Screenshots at 360, 768 and 1440 px in both themes: [docs/screenshots/](docs/screenshots/).
 - **Rate limits are kept in memory**, so they are per process and reset on restart. A multi-instance deploy would
   need a shared store.
-- **Latency is high on a laptop GPU**, and higher still when it throttles. See the measured table above.
+- **Latency is about 9 s per answer (median; 13.5 s max) on a laptop GPU**, and higher when it throttles: a request
+  heats this GPU by ~25–30 °C. See the measured table above. Use `127.0.0.1`, not `localhost`, for Ollama on Windows: a new
+  connection to `localhost` waits ~2.2 s for IPv6 first, which once doubled latency.
+- **The small reviewer over-flags on some questions.** On the multi-part demo question, qwen3:4b's Reviewer marks
+  sentences quoted word for word from the policies as `UNSUPPORTED`. The answer then keeps only its order part:
+  safe, but incomplete. A deterministic guard is proposed and awaits a decision. The screenshots predate the review
+  and latency changes.
+- **One capstone test can fail when another process uses the same Chroma folder:**
+  `tests/test_cache.py::test_11_add_document_clears_the_cache`.
+  - It failed in 2 of 5 full runs that overlapped with a measurement script using `chroma_db/` and the GPU, and
+    passed in all 7 full runs done alone.
+  - Run the test suite on its own. The root cause inside Chroma is not identified, and replies degrade safely.
 - **The evaluation judge is a deterministic rubric scorer**, not a human or an independent LLM.
 - **No public deployment yet** (Stage F was skipped by decision). The image and compose stack are ready for it.
 
