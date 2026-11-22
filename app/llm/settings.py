@@ -5,7 +5,7 @@ MOCK_LLM=true (the default) forces the mock provider whatever LLM_PROVIDER says.
   LLM_MODEL          ollama default qwen3:4b-instruct-2507-q4_K_M; required for openai_compatible
   LLM_BASE_URL       required for openai_compatible (an OpenAI-compatible /v1 URL)
   LLM_API_KEY        optional; never read from OPENAI_API_KEY, so a key is only sent where it was configured
-  OLLAMA_BASE_URL    default http://localhost:11434 (the /v1 suffix is added)
+  OLLAMA_BASE_URL    default http://127.0.0.1:11434 (the /v1 suffix is added)
   LLM_TEMPERATURE    default 0
   LLM_TIMEOUT_S      default 120 (per HTTP attempt)
   LLM_MAX_RETRIES    default 0 for ollama (a local server that is down or too slow will not recover in seconds,
@@ -26,7 +26,10 @@ from app.core import config
 from app.llm.errors import LLMConfigError
 
 Provider = Literal["mock", "ollama", "openai_compatible"]
-OLLAMA_DEFAULT_URL = "http://localhost:11434"
+# 127.0.0.1, not localhost: Ollama listens on IPv4 only, and on Windows a synchronous client resolving "localhost"
+# tries ::1 first and waits ~2.2 s for the refusal on EVERY new connection (measured; CrewAI opens one per agent
+# call), which doubled request latency.
+OLLAMA_DEFAULT_URL = "http://127.0.0.1:11434"
 # Measured on a 6 GB RTX 4050 (evaluation/v2/ollama_measurements.json): fully on GPU, 0 errors in 12 requests, about
 # 2.3x faster than qwen2.5:7b-instruct (which spills 18% to CPU there). Owner-approved default.
 OLLAMA_DEFAULT_MODEL = "qwen3:4b-instruct-2507-q4_K_M"

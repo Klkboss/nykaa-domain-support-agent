@@ -27,7 +27,7 @@ def test_default_follows_the_capstone_switch(monkeypatch):
 
 def test_ollama_defaults():
     s = load_llm_settings({"LLM_PROVIDER": "ollama"}, mock=False)
-    assert (s.provider, s.model, s.base_url) == ("ollama", OLLAMA_DEFAULT_MODEL, "http://localhost:11434/v1")
+    assert (s.provider, s.model, s.base_url) == ("ollama", OLLAMA_DEFAULT_MODEL, "http://127.0.0.1:11434/v1")
     assert (s.temperature, s.max_retries) == (0.0, 0)  # local: failures must not multiply
 
 
