@@ -29,18 +29,27 @@ from app.governance.budget import MAX_REQUEST_TOKENS_REAL  # noqa: E402
 from app.pipeline import SupportAssistant  # noqa: E402
 from app.tools.crew_tools import RagLookupTool  # noqa: E402
 
-# question, expected order lookup (None = must not look up), expected status set
+# question, expected order lookup (None = must not look up), expected status set, expected reply CONTENT:
+# (policy text present, order part: "facts" | "error" | None, asks for the order id). Status alone is not enough:
+# a reply can be "answered" yet miss its order facts or carry off-topic policy text.
 QUESTIONS = [
-    ("How long do I have to return shoes?", None, {"answered"}),
-    ("What is the status of my order ORD-1016?", "ORD-1016", {"answered"}),
+    ("How long do I have to return shoes?", None, {"answered"}, (True, None, False)),
+    ("What is the status of my order ORD-1016?", "ORD-1016", {"answered"}, (False, "facts", False)),
     ("My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?", "ORD-1029",
-     {"answered"}),
-    ("Where is my order ORD-9999?", "ORD-9999", {"answered"}),
-    ("What is the best way to train for a marathon?", None, {"fallback"}),
-    ("Can you check my order status?", None, {"needs_order_id"}),
+     {"answered"}, (True, "facts", False)),
+    ("Where is my order ORD-9999?", "ORD-9999", {"answered"}, (False, "error", False)),
+    ("What is the best way to train for a marathon?", None, {"fallback"}, (False, None, False)),
+    ("Can you check my order status?", None, {"needs_order_id"}, (False, None, True)),
 ]
-OUT = ROOT / "evaluation" / "v2" / "ollama_measurements.json"
+OUT = ROOT / "evaluation" / "v2" / os.environ.get("MEASURE_OUT", "ollama_measurements.json")
 ROUNDS = int(os.environ.get("MEASURE_ROUNDS", "2"))  # each question is asked ROUNDS times (fresh session)
+
+
+def reply_content(draft) -> tuple | None:
+    if draft is None:
+        return None
+    order = "facts" if draft.order else "error" if draft.order_error else None
+    return (bool(draft.policy_claims or draft.policy_error), order, draft.needs_order_id)
 
 
 def ollama_ps(model: str) -> dict:
@@ -66,7 +75,7 @@ def measure(model: str) -> dict:
     assistant.ask("warmup", "How long do I have to return shoes?")  # loads the model; not counted
     load_s = round(time.perf_counter() - t, 1)
     rows = []
-    for i, (question, order_id, expected) in enumerate(QUESTIONS * ROUNDS):
+    for i, (question, order_id, expected, content) in enumerate(QUESTIONS * ROUNDS):
         assistant.last_crew_run = None  # set only on success: never score a failed request from the previous one
         t = time.perf_counter()
         r = assistant.ask(f"m{i}", question)
@@ -77,6 +86,7 @@ def measure(model: str) -> dict:
         rows.append({
             "question": question, "status": r.status, "expected_status": sorted(expected),
             "status_ok": r.status in expected, "latency_s": latency,
+            "content_ok": content == reply_content(r.draft),
             "tokens": assistant.last_budget.used if assistant.last_budget else 0,
             "crew_calls": crew_calls, "generation": getattr(tool.generator, "outcomes", []),
             "review_calls": 2 if review else 0,
@@ -95,7 +105,7 @@ def measure(model: str) -> dict:
 
 def stress(assistant: SupportAssistant) -> dict:
     """Worst case for the real-provider cap: 5 prior exchanges, then a question near the API's 2,000-char limit."""
-    for q, _, _ in QUESTIONS[:5]:
+    for q, *_ in QUESTIONS[:5]:
         assistant.ask("stress", q)
     filler = ("I bought a pair of running shoes and a lipstick last month, the shoes were a gift for my brother and "
               "he has not worn them yet, and I still have the original shoebox and the receipt with me today. ")
@@ -117,6 +127,7 @@ def summary(result: dict) -> dict:
         "model": result["model"], "gpu_fraction": result["ollama_ps"].get("gpu_fraction"),
         "status_ok": f"{sum(r['status_ok'] for r in rows)}/{len(rows)}",
         "routing_ok": f"{sum(r['routing_ok'] for r in rows)}/{len(rows)}",
+        "content_ok": f"{sum(r.get('content_ok', False) for r in rows)}/{len(rows)}",
         "errors": sum(r["status"] == "error" for r in rows),
         "latency_s_median": statistics.median(lat), "latency_s_max": max(lat),
         "tokens_median": statistics.median(tok), "tokens_max": max(tok),

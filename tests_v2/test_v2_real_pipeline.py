@@ -138,7 +138,91 @@ def test_a_contradictory_needs_order_id_is_repaired_and_counted(assistant):
     fake._composer = composer
     r = ask(a, ORDER)
     assert r.status == "answered" and r.draft.order and not r.draft.needs_order_id
-    assert a.last_crew_run.draft_repairs == ["needs_order_id"] and fake.roles.count("composer") == 1
+    assert a.last_crew_run.draft_repairs[0] == "needs_order_id" and fake.roles.count("composer") == 1
+
+
+# --- deterministic intent rules on the real Composer's draft (Stage B follow-up) -------------------------------
+
+KB01 = "Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox."
+KB03 = ("An order counts as a delayed shipment when it has not been delivered by the promised date shown at "
+        "checkout, and delayed orders are prioritised for escalation.")
+FACTS = {"record_id": "ORD-1029", "status": "Delivered", "order_value_inr": 900, "escalation_score": 0.5,
+         "escalation_threshold": 0.78, "escalation_recommended": False}
+
+
+TOOL_FACTS = {"tool": "check_order_status", **FACTS}
+
+
+def rules(draft: dict, question: str, ids: set[str], order_output: dict | None = None):
+    from app.agents.crew import apply_intent_rules
+    from app.schemas import SupportDraft
+
+    notes: list[str] = []
+    return apply_intent_rules(SupportDraft.model_validate(draft), question, ids, notes, order_output), notes
+
+
+def test_an_order_question_without_an_id_always_asks_for_it():
+    draft = {"policy_claims": [{"text": KB03, "source_doc_ids": ["KB-03"]}], "order_error": "No order found"}
+    out, notes = rules(draft, "Can you check my order status?", set())  # the model invented an id
+    assert out.needs_order_id and out.order is None and out.order_error is None and out.policy_claims == []
+    assert notes == ["ask_for_order_id", "order_from_tool", "pure_order_question"]
+
+
+def test_order_facts_come_from_the_tool_even_when_the_model_drops_or_alters_them():
+    altered = {**FACTS, "order_value_inr": 99999}
+    for model_order in (None, altered):
+        out, notes = rules({"order": model_order}, "What is the status of my order ORD-1029?", {"ORD-1029"},
+                           TOOL_FACTS)
+        assert out.order is not None and out.order.model_dump() == FACTS and notes == ["order_from_tool"]
+    out, _ = rules({"order": FACTS}, "Where is my order ORD-1029?", {"ORD-1029"}, None)
+    assert out.order is None  # no lookup happened: a model's order facts are never kept
+    out, _ = rules({}, "Where is my order ORD-9999?", {"ORD-9999"},
+                   {"tool": "check_order_status", "error": "No order found with record_id ORD-9999"})
+    assert out.order_error == "No order found with record_id ORD-9999"
+
+
+def test_a_policy_question_never_asks_for_an_order_id():
+    out, notes = rules({"policy_claims": [{"text": KB01, "source_doc_ids": ["KB-01"]}], "needs_order_id": True},
+                       "How long do I have to return shoes?", set())
+    assert not out.needs_order_id and [c.text for c in out.policy_claims] == [KB01]
+    assert notes == ["no_order_question"]
+
+
+def test_a_pure_order_question_gets_no_policy_text():
+    out, notes = rules({"policy_claims": [{"text": KB03, "source_doc_ids": ["KB-03"]}], "order": FACTS},
+                       "What is the status of my order ORD-1029?", {"ORD-1029"}, TOOL_FACTS)
+    assert out.policy_claims == [] and out.order is not None and notes == ["pure_order_question"]
+
+
+def test_a_multi_part_question_keeps_both_parts_and_splits_merged_sentences():
+    merged = f"{KB01} {KB03}"  # a model joined two quotes into one claim
+    out, notes = rules({"policy_claims": [{"text": merged, "source_doc_ids": ["KB-01", "KB-03"]}], "order": FACTS},
+                       "My order ORD-1029 arrived late. Can I still return the shoes?", {"ORD-1029"}, TOOL_FACTS)
+    assert [c.text for c in out.policy_claims] == [KB01, KB03] and out.order is not None
+    assert notes == ["split_claims"]
+
+
+def test_split_sentences_are_each_checked_as_strictly_as_before(collections):
+    from app.guardrails.groundedness import check_draft
+    from app.rag.generation import SIMILARITY_THRESHOLDS
+    from app.tools.crew_tools import RagLookupTool
+
+    tool = RagLookupTool(collection=collections[RECOMMENDED_STRATEGY], threshold=SIMILARITY_THRESHOLDS["fixed"],
+                         generator=MockGroundedGenerator())
+    rag = json.loads(tool._run("Can I return shoes?"))
+    invented = "Shoes can also be swapped for store credit at any time."
+    out, _ = rules({"policy_claims": [{"text": f"{KB01} {invented}", "source_doc_ids": ["KB-01"]}]},
+                   "Can I return shoes?", set())
+    checked, report = check_draft(out, rag, None)
+    assert [c.text for c in checked.policy_claims] == [KB01] and report.rejected_claims == [invented]
+
+
+def test_no_id_order_question_end_to_end_asks_for_the_id(assistant):
+    invented = completion(None, tool_calls=[{"id": "c", "type": "function", "function": {
+        "name": "check_order_status", "arguments": '{"record_id": "ORD-9876"}'}}])
+    a, _, _ = assistant(lookup=invented)
+    r = ask(a, "Can you check my order status?")
+    assert r.status == "needs_order_id" and r.reply == "Please share your order ID (format ORD-1234) so I can check it."
 
 
 def test_failure_reasons_are_fixed_labels_never_message_text():
@@ -244,6 +328,21 @@ def test_the_model_answer_is_used_only_when_the_guardrail_supports_it(collection
         results[answer] = (gen.generate(SHOES, chunks), gen.outcomes)
     assert results[quote] == (quote, ["answer"])
     assert results[invented] == (quote, ["quotes"])  # unsupported answer dropped; the verified quote is kept
+
+
+def test_an_answer_blending_two_documents_is_replaced_by_the_separate_quotes(collections, real_provider):
+    from app.guardrails.groundedness import evidence_by_doc
+
+    q = "My order arrived late. Can I still return the shoes, and is my case being escalated?"
+    chunks = [c for c in search(collections[RECOMMENDED_STRATEGY], q) if c.similarity >= 0.33]
+    picks = [next(s for p in passages for s in split_sentences(p) if s[0].isupper() and s.endswith("."))
+             for passages in evidence_by_doc(chunks).values()][:2]
+    assert len(picks) == 2  # two different documents
+    blended = picks[0].rstrip(".") + ", and " + picks[1][0].lower() + picks[1][1:]
+    fake = CrewFake(generator=completion(json.dumps({"quotes": picks, "answer": blended})))
+    gen = LLMGroundedGenerator(load_llm_settings(), http_client=fake.sync_client())
+    text = gen.generate(q, chunks)
+    assert gen.outcomes == ["quotes"] and split_sentences(text) == picks
 
 
 def test_generation_cache_keys_separate_providers_and_models_but_not_the_mock():

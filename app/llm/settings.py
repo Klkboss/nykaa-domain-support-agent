@@ -2,7 +2,7 @@
 
 MOCK_LLM=true (the default) forces the mock provider whatever LLM_PROVIDER says.
   LLM_PROVIDER       mock (default) | ollama | openai_compatible
-  LLM_MODEL          ollama default qwen2.5:7b-instruct; required for openai_compatible
+  LLM_MODEL          ollama default qwen3:4b-instruct-2507-q4_K_M; required for openai_compatible
   LLM_BASE_URL       required for openai_compatible (an OpenAI-compatible /v1 URL)
   LLM_API_KEY        optional; never read from OPENAI_API_KEY, so a key is only sent where it was configured
   OLLAMA_BASE_URL    default http://localhost:11434 (the /v1 suffix is added)
@@ -27,7 +27,9 @@ from app.llm.errors import LLMConfigError
 
 Provider = Literal["mock", "ollama", "openai_compatible"]
 OLLAMA_DEFAULT_URL = "http://localhost:11434"
-OLLAMA_DEFAULT_MODEL = "qwen2.5:7b-instruct"
+# Measured on a 6 GB RTX 4050 (evaluation/v2/ollama_measurements.json): fully on GPU, 0 errors in 12 requests, about
+# 2.3x faster than qwen2.5:7b-instruct (which spills 18% to CPU there). Owner-approved default.
+OLLAMA_DEFAULT_MODEL = "qwen3:4b-instruct-2507-q4_K_M"
 # Ollama ignores the key, but the OpenAI SDK needs one; an explicit value also stops it reading OPENAI_API_KEY.
 _PLACEHOLDER_KEY = "not-set"
 

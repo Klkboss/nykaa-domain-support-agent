@@ -2,8 +2,11 @@
 
 The model gets the retrieved policy sentences and must return JSON {"quotes": [...], "answer": "..."}.
   - Every quote must equal one retrieved sentence (whitespace-insensitive); it is replaced by that exact sentence.
-  - The model's short `answer` is used only if every sentence of it passes the groundedness guardrail's own support
-    test against the retrieved chunks; otherwise the verified quotes are the answer.
+  - The model's short `answer` is used only if every sentence of it is supported by ONE retrieved document (the
+    exact per-document rule the citations and the groundedness guardrail apply downstream); otherwise the verified
+    quotes are the answer, each its own sentence, so a multi-part question keeps one verified quote per part.
+    (Measured on qwen3:4b: an answer blending a KB-01 and a KB-12 fact passed a pooled-evidence check, got no
+    citation downstream and the whole reply fell back.)
   - Anything else (invalid JSON, a quote not in the context, no quotes, a provider error) falls back to the
     capstone's extractive answer from the same chunks, so the text is still retrieved policy text, never invented.
 BudgetExceeded is never caught. Fallback text is marked not cacheable, so a transient failure is not stored.
@@ -18,8 +21,8 @@ import httpx
 from openai import OpenAI
 from pydantic import BaseModel, Field, ValidationError
 
-from app.core.cache import is_supported_by
 from app.governance.budget import BudgetExceeded, RequestBudget
+from app.guardrails.groundedness import attribute_claims, evidence_by_doc
 from app.llm.errors import classify
 from app.llm.metering import metered, reported_or_estimated
 from app.llm.settings import LLMSettings
@@ -32,8 +35,9 @@ from app.rag.retrieval import RetrievedChunk
 GENERATION_MAX_TOKENS = 400
 SYSTEM_PROMPT = (
     "You answer customer questions about Nykaa policies using ONLY the numbered policy sentences you are given. "
-    "Return JSON with two fields: \"quotes\": the 1 or 2 sentences that answer the question, copied exactly, "
-    "word for word, from the list; \"answer\": a one-sentence answer that uses only facts from those quotes. "
+    "Return JSON with two fields: \"quotes\": the 1 to 3 sentences that answer the question, each copied exactly, "
+    "word for word, as a separate list item (never join two sentences); if the question has several parts, quote "
+    "one sentence for each part; \"answer\": a one-sentence answer that uses only facts from those quotes. "
     "Never add facts that are not in the quotes."
 )
 
@@ -61,7 +65,7 @@ class LLMGroundedGenerator(MockGroundedGenerator):
     """A drop-in for MockGroundedGenerator (same `generate(query, chunks)` interface and fallback)."""
 
     def __init__(self, settings: LLMSettings, http_client: httpx.Client | None = None,
-                 max_sentences: int = 2, margin: float = 0.10) -> None:
+                 max_sentences: int = 3, margin: float = 0.10) -> None:  # 3: one quote per part of a question
         super().__init__(max_sentences, margin)
         self.settings = settings
         self.budget: RequestBudget | None = None  # set per request by RagLookupTool
@@ -118,6 +122,7 @@ class LLMGroundedGenerator(MockGroundedGenerator):
             raise GenerationRejected("quote_not_in_context")
         verified = dedupe([q for q in quotes if q])[: self.max_sentences]
         answer = parsed.answer.strip()
-        if answer and is_supported_by(answer, chunks):
+        cited = attribute_claims(split_sentences(answer), evidence_by_doc(chunks)) if answer else []
+        if cited and all(c["source_doc_ids"] for c in cited):
             return answer, "answer"
         return " ".join(verified), "quotes"

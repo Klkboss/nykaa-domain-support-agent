@@ -29,12 +29,13 @@ from crewai.llms.base_llm import BaseLLM
 from pydantic import ValidationError
 
 from app.core import config
-from app.core.mock_llm import RECORD_ID_RE, MockCrewLLM
+from app.core.mock_llm import ORDER_FACT_FIELDS, ORDER_INTENT_RE, POLICY_CUE_RE, RECORD_ID_RE, MockCrewLLM
 from app.governance.budget import RequestBudget
 from app.governance.least_autonomy import enforce_crew_least_autonomy
 from app.llm.crew_llm import build_crew_llm
 from app.llm.settings import load_llm_settings
-from app.schemas import SupportDraft
+from app.rag.documents import split_sentences
+from app.schemas import PolicyClaim, SupportDraft
 from app.tools.crew_tools import CheckOrderStatusTool, RagLookupTool
 
 NO_HISTORY = "(none)"
@@ -79,6 +80,46 @@ def draft_guardrail(context_tasks: list[Task]):  # type: ignore[no-untyped-def]
         return True, draft.model_dump_json()
     valid_support_draft.repairs = []  # type: ignore[attr-defined]
     return valid_support_draft
+
+
+def apply_intent_rules(draft: SupportDraft, question: str, ids_given: set[str], notes: list[str],
+                       order_output: dict[str, Any] | None = None) -> SupportDraft:
+    """Real models: the capstone mock Composer's deterministic rules, applied to the model's validated draft. They
+    never invent anything: order fields are copied from the order tool's own output, and otherwise content is only
+    removed or the fixed "please share your order ID" line is set. The groundedness guardrail still checks the
+    result. Each applied rule is noted (counted in reports).
+      1. needs_order_id is decided in code: an order question (ORDER_INTENT_RE) with no order id given.
+      2. Order facts / the order error are COPIED FROM THE ORDER TOOL'S OUTPUT, never transcribed by the model
+         (measured: qwen3:4b left `order` empty although the tool returned the facts). No lookup -> no order fields.
+      3. A pure order question (order part answered, no policy cue in the question) gets no policy text.
+      4. Each policy claim is split into sentences, so two sentences a model merged are verified separately.
+    """
+    update: dict[str, Any] = {}
+    needs_id = bool(ORDER_INTENT_RE.search(question)) and not ids_given
+    if needs_id != draft.needs_order_id:
+        notes.append("ask_for_order_id" if needs_id else "no_order_question")
+    update["needs_order_id"] = needs_id
+    order, order_error = None, None
+    if order_output and not needs_id:
+        if "error" in order_output:
+            order_error = order_output["error"]
+        else:
+            order = {k: order_output[k] for k in ORDER_FACT_FIELDS}
+    model_order = draft.order.model_dump() if draft.order else None
+    if (model_order, draft.order_error) != (order, order_error):
+        notes.append("order_from_tool")
+    update.update(order=order, order_error=order_error)
+    order_answered = needs_id or order is not None or order_error is not None
+    if order_answered and not POLICY_CUE_RE.search(question) and (draft.policy_claims or draft.policy_error):
+        notes.append("pure_order_question")
+        update.update(policy_claims=[], policy_error=None)
+    else:
+        split = [PolicyClaim(text=s, source_doc_ids=c.source_doc_ids)
+                 for c in draft.policy_claims for s in split_sentences(c.text)]
+        if len(split) != len(draft.policy_claims):
+            notes.append("split_claims")
+        update["policy_claims"] = split[:5]  # SupportDraft allows at most 5 claims
+    return SupportDraft.model_validate(draft.model_dump() | update)
 
 
 @dataclass
@@ -202,7 +243,9 @@ def run_support_crew(
     calls = {n: getattr(support.llms[n], "calls", []) for n in names}
     structured = out.pydantic if isinstance(out.pydantic, SupportDraft) else None
     if support.real:  # the guardrail already validated it; a failure here means CrewAI changed, and fails safe
-        structured = SupportDraft.model_validate_json(out.raw)
+        structured = apply_intent_rules(SupportDraft.model_validate_json(out.raw), question,
+                                        support.order_tool.allowed_ids or set(), support.draft_repairs,
+                                        (support.order_tool.outputs or [None])[-1])
     return CrewRun(
         question=question,
         raw=out.raw,
