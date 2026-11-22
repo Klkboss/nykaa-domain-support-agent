@@ -40,9 +40,9 @@ from scripts.run_evaluation import METRICS, QUERIES_PATH, run_case, score, verif
 OUT_DIR = ROOT / "evaluation" / "v2"
 REPORT = ROOT / "evaluation" / "V2_PROVIDER_COMPARISON.md"
 R2_V1 = ROOT / "evaluation" / "remediation" / "evaluation_results_r2_kb08v2_rubric_v1.json"
-# Start a real-model request only at or below this GPU temperature. 52 C: one request adds ~25-30 C on this laptop,
-# and thermal slowdown starts near 86 C (measured); starting at 60 C throttled most requests.
-COOL_C = float(os.environ.get("EVAL_COOL_C", "52"))
+# Owner rule: start a real-model request only at or below this GPU temperature, and discard and re-run a request
+# only if it actually had thermal or power throttling (NVIDIA's cumulative counters grew during it).
+COOL_C = float(os.environ.get("EVAL_COOL_C", "65"))
 MAX_ATTEMPTS = int(os.environ.get("EVAL_MAX_ATTEMPTS", "4"))
 GPU_FIELDS = ("temperature.gpu", "clocks_event_reasons_counters.sw_thermal_slowdown",
               "clocks_event_reasons_counters.hw_thermal_slowdown", "clocks_event_reasons_counters.sw_power_cap")
@@ -56,6 +56,11 @@ def gpu() -> dict[str, float] | None:
         return None
     temp, sw, hw, cap = (float(x) for x in line.split(","))
     return {"temp_c": temp, "sw_thermal_us": sw, "hw_thermal_us": hw, "power_cap_us": cap}
+
+
+def throttled(attempt: dict[str, Any]) -> bool:
+    """Thermal or power throttling happened during the request (counter growth in ms)."""
+    return bool(attempt.get("thermal_slowdown_ms") or attempt.get("power_cap_ms"))
 
 
 def wait_until_cool(limit_s: float = 900) -> float:
@@ -162,13 +167,13 @@ def measure(provider: str) -> None:
             print(f"{label} a{attempt}: {status:15} {latency:6.2f}s tokens={attempts[-1]['tokens']} "
                   f"calls={attempts[-1]['model_calls']['total']} gpu={attempts[-1]['gpu_temp_before_c']}"
                   f"->{attempts[-1]['gpu_temp_after_c']}C thermal={thermal_ms}ms", flush=True)
-            if not real or not thermal_ms:
+            if not real or not throttled(attempts[-1]):
                 break
         return result, attempts
 
     def timing(attempts: list[dict[str, Any]]) -> dict[str, Any]:
         return {"measured": attempts[-1], "throttled_attempts": attempts[:-1],
-                "still_throttled": bool(real and attempts[-1]["thermal_slowdown_ms"])}
+                "still_throttled": bool(real and throttled(attempts[-1]))}
 
     spec = json.loads(QUERIES_PATH.read_text(encoding="utf-8"))
     cases, extra = [], {}
@@ -214,6 +219,12 @@ def _stats(values: list[float]) -> str:
     return f"{statistics.median(values):.2f} / {statistics.mean(values):.2f} / {max(values):.2f}"
 
 
+def _throttle(x: dict[str, Any]) -> str:
+    if x.get("thermal_slowdown_ms") is None:
+        return "n/a"
+    return f"{x['thermal_slowdown_ms']:.0f} / {x['power_cap_ms']:.0f}"
+
+
 def _scores(s: dict[str, int]) -> str:
     return " ".join(str(s[m]) for m in METRICS)
 
@@ -251,8 +262,8 @@ def report() -> None:
         f"  `{env.get('gpu', '?')}`; {env.get('power_scheme', '?')}.",
         f"- **Thermal control:** a request starts only at ≤ {env.get('start_at_or_below_c', COOL_C):.0f} °C. Any "
         "request during which NVIDIA's",
-        "  thermal-slowdown counters grew was discarded and re-run after cooling. The GPU temperature before and",
-        "  after every measured request is in the tables.",
+        "  thermal-slowdown or power-cap counters grew was discarded and re-run after cooling. The start temperature",
+        "  and the throttle time of every recorded request are in the tables.",
         "- **Graded files untouched:** the SHA-256 lock of the original evaluation was checked before and after",
         "  both runs.",
         f"  The mock run reproduces the committed r2 (rubric v1) scores and replies exactly: "
@@ -285,15 +296,16 @@ def report() -> None:
         lines += ["", f"## Per query: {name}", "",
                   "Scores are accuracy, grounding, completeness, safety (1–5). Rubric v3 is shown only where it",
                   "differs.",
-                  "", "| ID | Kind | Status | v1 scores | v3 | Latency s | Tokens | Calls | GPU °C before → after |",
-                  "|---|---|---|---|---|---|---|---|---|"]
+                  "", "| ID | Kind | Status | v1 scores | v3 | Latency s | Tokens | Calls | GPU °C start → end | "
+                  "Throttle ms (thermal / power) |", "|---|---|---|---|---|---|---|---|---|---|"]
         for r in run["rows"]:
             x = r["measured"]
             v3 = _scores(r["scores_v3"]) if r["scores_v3"] != r["scores_v1"] else ""
             gpu_c = (f"{x['gpu_temp_before_c']:.0f} → {x['gpu_temp_after_c']:.0f}"
                      if x["gpu_temp_before_c"] is not None else "n/a")
             lines.append(f"| {r['id']} | {r['kind']} | {r['status']} | {_scores(r['scores_v1'])} | {v3} | "
-                         f"{x['latency_s']:.2f} | {x['tokens']} | {x['model_calls']['total']} | {gpu_c} |")
+                         f"{x['latency_s']:.2f} | {x['tokens']} | {x['model_calls']['total']} | {gpu_c} | "
+                         f"{_throttle(x)} |")
     diffs = [(a, b) for a, b in zip(mock["rows"], real["rows"], strict=True)
              if a["scores_v1"] != b["scores_v1"] or a["status"] != b["status"]]
     lines += ["", "## Where the real model differs from the mock (rubric v1)", ""]
@@ -312,7 +324,7 @@ def report() -> None:
                   "The six sample questions of the chat UI, each checked for its expected status, cited sources and",
                   "order facts.", "",
                   "| ID | Kind | Status (expected) | Sources cited | Order facts | Passed | Latency s | "
-                  "GPU °C before → after |", "|---|---|---|---|---|---|---|---|"]
+                  "GPU °C start → end | Throttle ms (thermal / power) |", "|---|---|---|---|---|---|---|---|---|"]
         for r in demo:
             x, e, c = r["measured"], r["expected"], r["checks"]
             gpu_c = (f"{x['gpu_temp_before_c']:.0f} → {x['gpu_temp_after_c']:.0f}"
@@ -320,13 +332,14 @@ def report() -> None:
             lines.append(f"| {r['id']} | {r['kind']} | {r['status']} ({e['status']}) | "
                          f"{'ok' if c['sources'] else 'MISSING'} (expected {', '.join(e['sources']) or 'none'}) | "
                          f"{'ok' if c['order'] else 'WRONG'} | {'yes' if r['passed'] else '**NO**'} | "
-                         f"{x['latency_s']:.2f} | {gpu_c} |")
+                         f"{x['latency_s']:.2f} | {gpu_c} | {_throttle(x)} |")
     notes = OUT_DIR / "provider_comparison_notes.md"
     if notes.exists():  # hand-written trace analysis of the differences, kept apart from the measured numbers
         lines += ["## Traced causes of the differences", "", notes.read_text(encoding="utf-8").strip(), ""]
     throttled = [(r["id"], t) for r in real["rows"] for t in r["throttled_attempts"]]
     lines += ["", "## Discarded (throttled) requests", ""]
-    lines += [f"- {i} attempt {t['attempt']}: {t['latency_s']:.2f} s, {t['thermal_slowdown_ms']} ms thermal slowdown, "
+    lines += [f"- {i} attempt {t['attempt']}: {t['latency_s']:.2f} s, {t['thermal_slowdown_ms']} ms thermal / "
+              f"{t['power_cap_ms']} ms power-cap slowdown, "
               f"GPU {t['gpu_temp_before_c']:.0f} → {t['gpu_temp_after_c']:.0f} °C" for i, t in throttled] or ["None."]
     still = [r["id"] for r in real["rows"] if r["still_throttled"]]
     if still:
