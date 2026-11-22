@@ -736,6 +736,37 @@ never order lookups or complete responses).
   search is temporarily unavailable"; if the index returns nothing, the reply is the refusal. Neither is ever an
   unsupported answer, and nothing is cached.
 
+## Chat UI (v2)
+The API serves a chat page at http://127.0.0.1:8000/. It is static HTML, CSS and vanilla JS with no build step. The
+fonts are self-hosted (Sora, Inter and JetBrains Mono; SIL OFL 1.1), and a strict Content Security Policy allows only
+this origin.
+
+![Chat UI, 1440 px, dark theme](docs/screenshots/chat-1440-dark.png)
+
+- **Live progress:** each reply shows its real stages as they start: Checking safety → Searching policies →
+  Looking up order (only when the order tool runs) → Composing → Reviewing. The pipeline emits these events
+  (`RequestTrace` in app/pipeline.py); no timer fakes them.
+- **How this answer was made:** every reply has a collapsible panel with:
+  - the cited and retrieved KB documents, and the tools called;
+  - the groundedness result, the AutoGen review verdict (approved or revised) and the escalation flag;
+  - the guardrail category when a question is blocked;
+  - the model, the latency and the tokens charged to the request budget.
+- **Sample questions:** a policy question, an order lookup (ORD-1016), an order question without an ID, a
+  multi-part question, an out-of-scope question and a prompt-injection attempt.
+- **Opt-in protocol:** the page connects to `/ws/chat?progress=1&explain=1`. Without those parameters every
+  WebSocket message is exactly as before, and a test locks this.
+- **Public-demo protection:**
+  - per-client question limits: off locally, and on in the Docker image at 6 per minute and 100 per UTC day,
+    via `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_PER_DAY`;
+  - the existing 2,000-character question limit, plus the token budget;
+  - `GET /health`, which reports the provider, the model and the storage, never secrets.
+- **Accessibility:** keyboard use (a skip link, visible focus, Enter to send, native `<details>` panels), labelled
+  controls and a live region for replies. It works on mobile from 360 px. A test checks WCAG AA contrast (≥ 4.5:1)
+  for every text colour on every background, in both themes. Light theme uses darker accent and status colours than
+  dark theme, which is what AA requires there.
+- **Screenshots** of 360 / 768 / 1440 px in both themes are in [docs/screenshots/](docs/screenshots/), regenerated with
+  [scripts/capture_screenshots.py](scripts/capture_screenshots.py) (needs `pip install playwright` and Edge).
+
 ## Docker and CI (v2)
 The whole stack in containers: PostgreSQL, a one-shot `migrate` service (`alembic upgrade head` plus the
 idempotent seed of the 50 orders), then the API on http://127.0.0.1:8000. `MOCK_LLM=true` unless `.env` says
