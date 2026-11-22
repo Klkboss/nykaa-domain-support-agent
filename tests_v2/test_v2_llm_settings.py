@@ -71,3 +71,36 @@ def test_api_key_is_never_shown():
 def test_openai_api_key_in_the_environment_is_not_picked_up():
     s = load_llm_settings({"LLM_PROVIDER": "ollama", "OPENAI_API_KEY": "sk-openai"}, mock=False)
     assert s.api_key.get_secret_value() != "sk-openai"
+
+
+HOSTED = {"LLM_PROVIDER": "openai_compatible", "LLM_MODEL": "openai/gpt-oss-120b"}
+
+
+def test_the_key_can_be_named_by_its_variable_and_is_never_shown():
+    s = load_llm_settings({**HOSTED, "LLM_BASE_URL": "https://api.groq.com/openai/v1",
+                           "LLM_API_KEY_ENV": "GROQ_API_KEY", "GROQ_API_KEY": "gsk-secret-1",
+                           "LLM_API_KEY": "other"}, mock=False)
+    assert s.api_key.get_secret_value() == "gsk-secret-1"  # the named variable wins
+    assert "gsk-secret-1" not in repr(s) and "gsk-secret-1" not in str(s.model_dump())
+
+
+def test_a_named_key_variable_that_is_unset_is_a_clear_error():
+    with pytest.raises(LLMConfigError, match="GROQ_API_KEY, which is not set"):
+        load_llm_settings({**HOSTED, "LLM_BASE_URL": "https://api.groq.com/openai/v1",
+                           "LLM_API_KEY_ENV": "GROQ_API_KEY"}, mock=False)
+
+
+def test_the_base_url_takes_variables_so_an_account_id_is_never_hard_coded():
+    url = "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1"
+    s = load_llm_settings({**HOSTED, "LLM_BASE_URL": url, "CLOUDFLARE_ACCOUNT_ID": "abc123"}, mock=False)
+    assert s.base_url == "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
+    with pytest.raises(LLMConfigError, match="CLOUDFLARE_ACCOUNT_ID, which is not set"):
+        load_llm_settings({**HOSTED, "LLM_BASE_URL": url}, mock=False)
+
+
+def test_reasoning_effort_is_optional_and_validated():
+    base = {**HOSTED, "LLM_BASE_URL": "https://api.groq.com/openai/v1"}
+    assert load_llm_settings(base, mock=False).reasoning_effort is None
+    assert load_llm_settings({**base, "LLM_REASONING_EFFORT": "Low"}, mock=False).reasoning_effort == "low"
+    with pytest.raises(LLMConfigError, match="LLM_REASONING_EFFORT"):
+        load_llm_settings({**base, "LLM_REASONING_EFFORT": "max"}, mock=False)

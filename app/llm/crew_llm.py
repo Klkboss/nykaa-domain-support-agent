@@ -122,6 +122,7 @@ def build_crew_llm(settings: LLMSettings, budget: RequestBudget | None = None,
         timeout=settings.timeout_s,
         max_retries=settings.max_retries,
         max_tokens=settings.max_tokens,
+        reasoning_effort=settings.reasoning_effort,  # None: not sent
         # CrewAI's own response_format field only takes json_object or a pydantic class (which it parses itself);
         # additional_params is merged into the request as-is.
         additional_params={"response_format": json_schema_format(response_format)} if response_format else {},

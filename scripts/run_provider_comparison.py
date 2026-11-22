@@ -13,6 +13,10 @@ Usage (one provider per process: MOCK_LLM is read at import):
   python scripts/run_provider_comparison.py mock
   $env:MOCK_LLM="false"; $env:LLM_PROVIDER="ollama"; python scripts/run_provider_comparison.py ollama
   python scripts/run_provider_comparison.py report      # writes evaluation/V2_PROVIDER_COMPARISON.md
+Hosted providers (keys read from .env by the name in LLM_API_KEY_ENV; no GPU rule; EVAL_PACE_S paces question starts;
+every provider HTTP response is counted, with its status, reported usage and rate-limit headers):
+  MOCK_LLM=false LLM_PROVIDER=openai_compatible LLM_BASE_URL=... LLM_MODEL=... LLM_API_KEY_ENV=GROQ_API_KEY \\
+    python scripts/run_provider_comparison.py hosted <label> [--demo-only]
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ import json
 import logging
 import os
 import platform
+import re
 import statistics
 import subprocess
 import sys
@@ -32,6 +37,10 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 logging.getLogger("crewai.llms.base_llm").setLevel(logging.ERROR)  # per-call token-estimate notice only
+if sys.argv[1:2] == ["hosted"]:  # keys come from .env by NAME (LLM_API_KEY_ENV); variables already set win
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 import app.core.config  # noqa: E402,F401
 from app.core.config import ROOT  # noqa: E402
@@ -70,10 +79,92 @@ def wait_until_cool(limit_s: float = 900) -> float:
     return round(time.monotonic() - start, 1)
 
 
+PACE_S = float(os.environ.get("EVAL_PACE_S", "0"))  # hosted: minimum seconds between question starts (free tiers)
+
+
+class WireLog:
+    """Hosted runs: every HTTP response from the model provider, read where the SDKs receive it (httpx `send`).
+
+    Records per response only the status, the provider-reported usage (tokens, reasoning tokens, Cloudflare's
+    `neurons`), the rate-limit headers and, on a 429, the quota names/values from the error body. Never the URL
+    (it can hold an account ID), the request, or any header that could carry a key.
+    """
+
+    def __init__(self, host: str) -> None:
+        self.host = host
+        self.records: list[dict[str, Any]] = []
+
+    def take(self) -> list[dict[str, Any]]:
+        out, self.records = self.records, []
+        return out
+
+    def observe(self, request: Any, response: Any) -> None:
+        if request.url.host != self.host:
+            return
+        rec: dict[str, Any] = {"status": response.status_code,
+                               "rate_limit": {k: v for k, v in response.headers.items()
+                                              if k.lower().startswith(("x-ratelimit", "retry-after"))}}
+        try:
+            body = json.loads(response.content)
+        except (ValueError, UnicodeDecodeError, AttributeError):
+            body = None
+        if isinstance(body, dict) and isinstance(body.get("usage"), dict):
+            u = body["usage"]
+            rec["usage"] = {"prompt": u.get("prompt_tokens"), "completion": u.get("completion_tokens"),
+                            "total": u.get("total_tokens"),
+                            "reasoning": (u.get("completion_tokens_details") or {}).get("reasoning_tokens"),
+                            "neurons": u.get("neurons")}
+        if response.status_code == 429:  # Google lists the exceeded quota (name and value) in the body
+            text = response.content.decode("utf-8", "replace")
+            rec["quota"] = sorted(set(re.findall(r'"(quota(?:Id|Metric|Value))":\s*"([^"]{1,120})"', text)))
+        self.records.append(rec)
+
+    def install(self) -> None:
+        import httpx
+
+        sync_send, async_send = httpx.Client.send, httpx.AsyncClient.send
+        log = self
+
+        def send(client: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
+            response = sync_send(client, request, *args, **kwargs)
+            log.observe(request, response)
+            return response
+
+        async def asend(client: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
+            response = await async_send(client, request, *args, **kwargs)
+            log.observe(request, response)
+            return response
+
+        httpx.Client.send, httpx.AsyncClient.send = send, asend  # type: ignore[method-assign]
+
+
+def wire_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
+    statuses: dict[str, int] = {}
+    for r in records:
+        statuses[str(r["status"])] = statuses.get(str(r["status"]), 0) + 1
+    usage = [r["usage"] for r in records if "usage" in r]
+
+    def total(key: str) -> float | None:
+        values = [u[key] for u in usage if u.get(key) is not None]
+        return round(sum(values), 2) if values else None
+
+    return {"http_requests": len(records), "http_statuses": statuses, "rate_limit_hits": statuses.get("429", 0),
+            "provider_tokens": total("total"), "prompt_tokens": total("prompt"),
+            "completion_tokens": total("completion"), "reasoning_tokens": total("reasoning"),
+            "neurons": total("neurons"), "last_rate_limit_headers": next(
+                (r["rate_limit"] for r in reversed(records) if r["rate_limit"]), {}),
+            "quota_errors": sorted({str(q) for r in records for q in r.get("quota", [])})}
+
+
 def environment(provider: str, settings: Any) -> dict[str, Any]:
     env: dict[str, Any] = {"provider": provider, "model": settings.model or "deterministic mock",
                            "python": platform.python_version(), "os": platform.platform(),
                            "base_url": settings.base_url, "start_at_or_below_c": COOL_C, "max_attempts": MAX_ATTEMPTS}
+    if provider == "openai_compatible":  # hosted: the URL template only (the expanded one can hold an account ID)
+        return {**env, "base_url": os.environ.get("LLM_BASE_URL", ""), "start_at_or_below_c": None,
+                "max_attempts": 1, "reasoning_effort": settings.reasoning_effort, "pace_s": PACE_S,
+                "key_variable": os.environ.get("LLM_API_KEY_ENV", "LLM_API_KEY"), "max_tokens": settings.max_tokens,
+                "measured_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     if provider != "mock":
         with urllib.request.urlopen(settings.base_url.removesuffix("/v1") + "/api/version", timeout=10) as r:
             env["ollama_version"] = json.load(r)["version"]
@@ -89,7 +180,9 @@ def model_calls(assistant: Any, tools: list[Any]) -> dict[str, int]:
     run, review = assistant.last_crew_run, assistant.last_review
     crew = dict(run.llm_calls) if run else {}
     generation = sum(1 for t in tools for e in t.cache_events if e not in ("hit", "not_generated"))
-    review_calls = sum(1 for m in review.messages if getattr(m, "source", "user") != "user") if review else 0
+    # a reasoning model's ThoughtEvent is part of the same call as the message after it
+    review_calls = sum(1 for m in (review.messages if review else [])
+                       if getattr(m, "source", "user") != "user" and type(m).__name__ != "ThoughtEvent")
     return {**{f"crew_{k}": v for k, v in crew.items()}, "generation": generation, "review": review_calls,
             "total": sum(crew.values()) + generation + review_calls}
 
@@ -119,7 +212,8 @@ def demo_checks(response: Any, expected: dict[str, Any]) -> dict[str, bool]:
             "order": has_order == expected["order"]}
 
 
-def measure(provider: str) -> None:
+def measure(provider: str, label: str | None = None, demo_only: bool = False) -> None:
+    """`label` names a hosted run's output file; `demo_only` (hosted screening) runs only the six demo questions."""
     from app.core.cache import GenerationCache
     from app.db import database_url
     from app.pipeline import SupportAssistant
@@ -137,21 +231,35 @@ def measure(provider: str) -> None:
     settings = assistant.llm_settings
     assert settings.provider == provider, (
         f"settings say {settings.provider!r}; set MOCK_LLM/LLM_PROVIDER for {provider}")
-    real = settings.is_real
-    assistant.ask("warm-up", "What is the refund policy for cancelled orders?")  # model, embeddings, index: loaded
+    real = settings.provider == "ollama"  # the local GPU: thermal rule and re-runs apply
+    hosted = settings.provider == "openai_compatible"
+    wire = WireLog(__import__("httpx").URL(settings.base_url).host) if hosted else None
+    if wire:
+        from app.rag.retrieval import search
+        from app.tools.crew_tools import default_policy_collection
 
-    def attempts_for(label: str, run_one: Callable[[int], tuple[Any, str]]) -> tuple[Any, list[dict[str, Any]]]:
-        """Run one question; on a real model, start only when cool and re-run while it hit a thermal slowdown."""
+        search(default_policy_collection(), "warm-up")  # embeddings and index loaded; no free-tier request spent
+        wire.install()
+    else:
+        assistant.ask("warm-up", "What is the refund policy for cancelled orders?")  # model, embeddings, index
+    last_start = [0.0]
+
+    def attempts_for(qid: str, run_one: Callable[[int], tuple[Any, str]]) -> tuple[Any, list[dict[str, Any]]]:
+        """Run one question; on a local GPU, start only when cool and re-run while it hit a thermal slowdown."""
         attempts: list[dict[str, Any]] = []
         for attempt in range(1, MAX_ATTEMPTS + 1):
             waited = wait_until_cool() if real else 0.0
+            if hosted:  # pace question starts to stay inside the free tier's per-minute limits
+                time.sleep(max(0.0, last_start[0] + PACE_S - time.monotonic()))
+                last_start[0] = time.monotonic()
+                wire.take()  # type: ignore[union-attr]
             tools.clear()
             assistant.last_crew_run = None  # a blocked request runs no crew: never count the previous request's
-            before = gpu()
+            before = None if hosted else gpu()
             t = time.perf_counter()
             result, status = run_one(attempt)
             latency = round(time.perf_counter() - t, 2)
-            after = gpu()
+            after = None if hosted else gpu()
             thermal_ms = power_ms = None
             if before and after:
                 thermal_ms = round((after["sw_thermal_us"] - before["sw_thermal_us"]
@@ -164,7 +272,14 @@ def measure(provider: str) -> None:
                 "gpu_temp_before_c": before and before["temp_c"], "gpu_temp_after_c": after and after["temp_c"],
                 "thermal_slowdown_ms": thermal_ms, "power_cap_ms": power_ms,
             })
-            print(f"{label} a{attempt}: {status:15} {latency:6.2f}s tokens={attempts[-1]['tokens']} "
+            if hosted:
+                attempts[-1].update(wire_summary(wire.take()))  # type: ignore[union-attr]
+                w = attempts[-1]
+                print(f"{qid}: {status:15} {latency:6.2f}s tokens={w['provider_tokens']} "
+                      f"(reasoning {w['reasoning_tokens']}) calls={w['model_calls']['total']} "
+                      f"http={w['http_statuses']} neurons={w['neurons']} quota={w['quota_errors']}", flush=True)
+                break
+            print(f"{qid} a{attempt}: {status:15} {latency:6.2f}s tokens={attempts[-1]['tokens']} "
                   f"calls={attempts[-1]['model_calls']['total']} gpu={attempts[-1]['gpu_temp_before_c']}"
                   f"->{attempts[-1]['gpu_temp_after_c']}C thermal={thermal_ms}ms", flush=True)
             if not real or not throttled(attempts[-1]):
@@ -177,7 +292,7 @@ def measure(provider: str) -> None:
 
     spec = json.loads(QUERIES_PATH.read_text(encoding="utf-8"))
     cases, extra = [], {}
-    for q in spec["queries"]:
+    for q in [] if demo_only else spec["queries"]:
         def run_query(attempt: int, q: dict[str, Any] = q) -> tuple[Any, str]:
             case = run_case(assistant, {**q, "id": f"{q['id']}-a{attempt}"} if attempt > 1 else q)
             return case, case["status"]
@@ -196,20 +311,21 @@ def measure(provider: str) -> None:
         demo_rows.append({"id": f"D{i}", "kind": kind, "question": question, "status": response.status,
                           "reply": response.reply, "expected": expected, "checks": checks,
                           "passed": all(checks.values()), **timing(attempts)})
-    scored = {v: score(cases, v) for v in ("v1", "v3")}
+    scored = {v: score(cases, v) for v in ("v1", "v3")} if cases else {}
     rows = []
-    for r1, r3 in zip(scored["v1"]["results"], scored["v3"]["results"], strict=True):
+    for r1, r3 in zip(*(scored[v]["results"] for v in ("v1", "v3")), strict=True) if scored else ():
         rows.append({"id": r1["id"], "kind": r1["kind"], "question": r1["question"], "status": r1["status"],
                      "reply": r1["reply"], "scores_v1": r1["scores"], "scores_v3": r3["scores"],
                      "rationale_v1": r1["rationale"], **extra[r1["id"]]})
     assert verify_originals() == hashes_before  # the graded files were not touched
-    out = {"environment": environment(provider, settings), "judge": scored["v1"]["judge"],
+    out = {"environment": environment(provider, settings), "judge": scored["v1"]["judge"] if scored else None,
            "averages": {v: scored[v]["averages"] for v in scored}, "original_file_sha256": hashes_before, "rows": rows,
            "demo": demo_rows}
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / f"provider_comparison_{provider}.json"
+    name = f"hosted_screen_{label}" if demo_only else f"provider_comparison_{label or provider}"
+    path = OUT_DIR / f"{name}.json"
     path.write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print("averages v1:", out["averages"]["v1"], "| v3:", out["averages"]["v3"],
+    print("averages v1:", out["averages"].get("v1"), "| v3:", out["averages"].get("v3"),
           f"| demo passed {sum(r['passed'] for r in demo_rows)}/{len(demo_rows)} ->", path.relative_to(ROOT))
 
 
@@ -354,11 +470,199 @@ def report() -> None:
     print("wrote", REPORT.relative_to(ROOT), "| mock reproduces r2:", mock_matches_r2)
 
 
+# --- hosted free tiers ---------------------------------------------------------------------------------------------
+
+HOSTED_REPORT = ROOT / "evaluation" / "V2_HOSTED_PROVIDERS.md"
+HOSTED = ["groq-gpt-oss-120b", "groq-gpt-oss-20b", "cloudflare-gpt-oss-120b", "cloudflare-gpt-oss-20b",
+          "gemini-3-flash", "gemini-3.8-flash"]
+# Published free-tier limits, used only where the provider's own response headers do not report one (each run's
+# headers are shown next to them). Sources: console.groq.com/docs/rate-limits (read 2026-11-23: 30 RPM, 1K RPD,
+# 8K TPM, 200K TPD for both gpt-oss models); developers.cloudflare.com/workers-ai/platform/pricing and /limits
+# (10,000 Neurons per day on Workers Free, 300 text-generation requests per minute). Gemini publishes no per-model
+# numbers (only in AI Studio), so its capacity comes from the quota a 429 names, if any.
+DOCUMENTED = {"groq": {"rpm": 30, "tpd": 200_000}, "cloudflare": {"rpm": 300, "neurons_per_day": 10_000}}
+
+
+def _load(name: str) -> dict[str, Any] | None:
+    path = OUT_DIR / f"{name}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+
+def _per_question(measured: list[dict[str, Any]]) -> dict[str, float]:
+    """Means over the questions that made at least one model call (a blocked question costs nothing)."""
+    used = [m for m in measured if m["model_calls"]["total"]]
+
+    def mean(key: str) -> float:
+        values = [m[key] if m.get(key) is not None else 0 for m in used]
+        return statistics.mean(values) if values else 0.0
+
+    return {"calls": statistics.mean(m["model_calls"]["total"] for m in used) if used else 0.0,
+            # successful responses only: a 429 retry is not a cost of the question, it is the limit being hit
+            "http": statistics.mean((m.get("http_statuses") or {}).get("200", 0) for m in used) if used else 0.0,
+            "tokens": mean("provider_tokens") if "provider_tokens" in used[0] else mean("tokens"),
+            # Cloudflare and Gemini do not report reasoning tokens separately (Gemini's total includes them)
+            "reasoning": mean("reasoning_tokens") if any(m.get("reasoning_tokens") for m in used) else None,
+            "neurons": mean("neurons"),
+            "rate_limit_hits": sum(m.get("rate_limit_hits") or 0 for m in measured)}
+
+
+def capacity(label: str, measured: list[dict[str, Any]]) -> dict[str, Any]:
+    """Questions per minute and per day on the free tier, from measured use per question and the limits."""
+    q = _per_question(measured)
+    headers = next((m["last_rate_limit_headers"] for m in reversed(measured) if m.get("last_rate_limit_headers")), {})
+    out: dict[str, Any] = {"per_question": q, "headers": headers}
+    if label.startswith("groq"):
+        rpd, tpm = int(headers.get("x-ratelimit-limit-requests", 0)), int(headers.get("x-ratelimit-limit-tokens", 0))
+        d = DOCUMENTED["groq"]
+        out["per_minute"] = min(d["rpm"] / q["http"], tpm / q["tokens"]) if tpm else None
+        out["per_day"] = min(rpd / q["http"], d["tpd"] / q["tokens"]) if rpd else None
+        out["basis"] = (f"RPD {rpd} and TPM {tpm} from the response headers; RPM {d['rpm']} and TPD {d['tpd']:,} "
+                        "documented")
+    elif label.startswith("cloudflare"):
+        d = DOCUMENTED["cloudflare"]
+        out["per_minute"] = d["rpm"] / q["http"]
+        out["per_day"] = d["neurons_per_day"] / q["neurons"] if q["neurons"] else None
+        out["basis"] = (f"{d['neurons_per_day']:,} Neurons/day and {d['rpm']} RPM documented; Neurons per question "
+                        "reported by Cloudflare in each response")
+    else:  # Gemini: the 429 bodies on this key named GenerateRequestsPerDay...-FreeTier 20 and ...PerMinute... 5
+        quota = " ".join(e for m in measured for e in m.get("quota_errors", []))
+        day = "PerDayPerProjectPerModel-FreeTier" in quota and "'20'" in quota
+        minute = "PerMinutePerProjectPerModel-FreeTier" in quota and "'5'" in quota
+        out["per_minute"] = 5 / q["http"] if minute else None
+        out["per_day"] = 20 / q["http"] if day else None
+        out["basis"] = ("20 requests/day and 5 requests/minute per model, named in Google's 429 bodies on this key"
+                        if day and minute else "no published per-model free-tier numbers")
+    return out
+
+
+def _fmt(x: float | None, digits: int = 0) -> str:
+    return "n/a" if x is None else f"{x:,.{digits}f}"
+
+
+def hosted_report() -> None:
+    notes = OUT_DIR / "hosted_providers_notes.md"
+    probe = json.loads((OUT_DIR / "hosted_probe.json").read_text(encoding="utf-8"))
+    lines = ["# v2 hosted free-tier providers: screening, evaluation and capacity", "",
+             "Generated by `scripts/run_provider_comparison.py hosted-report` from `evaluation/v2/hosted_*.json`,",
+             "`evaluation/v2/provider_comparison_<candidate>.json` and the local baseline",
+             "`evaluation/v2/provider_comparison_ollama.json`. Every number was measured in those runs, except the",
+             "published free-tier limits, which are labelled as documented.", "",
+             "## Method", "",
+             "- **Same pipeline as production:** `SupportAssistant.ask` through the existing `openai_compatible`",
+             "  provider (CrewAI crew, grounded generation, AutoGen review), generation cache off, a fresh session per",
+             "  question. `LLM_REASONING_EFFORT=low` for every hosted model; reasoning stays in the provider's",
+             "  separate field (checked in `hosted_probe.json`), so only the final answer enters the pipeline.",
+             "- **Tokens** are the provider-reported `total_tokens` summed over every HTTP response of the question",
+             "  (they include reasoning tokens); **HTTP requests** include SDK retries; **429** counts rate-limit",
+             "  responses. Cloudflare reports the **Neurons** each response cost.",
+             "- **Phase 1:** the six chat UI demo questions on every candidate. **Phase 2:** the frozen 15-query",
+             "  evaluation plus the six demo questions on the best candidates, scored by the same deterministic rubric",
+             "  judge as the graded evaluation (rubric v1; v3 shown where it differs). One run per candidate.",
+             "- **No GPU rule** for hosted models; question starts were paced (`pace_s`) to stay inside per-minute",
+             "  limits. The local baseline is qwen3:4b on Ollama (thermal rule as in V2_PROVIDER_COMPARISON.md).", ""]
+    lines += ["## Candidates and model IDs", "",
+              "Checked against each provider's own model list (`hosted_probe.json`), with one small request each.", "",
+              "| Candidate | Model ID | Listed by the provider | Probe | Reasoning returned in |",
+              "|---|---|---|---|---|"]
+    for name, p in probe.items():
+        listed = "yes" if p.get("model_listed") is True else str(p.get("model_listed"))
+        where = ", ".join(f"`{f}`" for f in p.get("reasoning_field_chars") or {}) or (
+            "not returned" if p.get("status") == 200 and p.get("message_fields") else "n/a")
+        body = " ".join(str(p.get("error_body") or "").replace("|", "/").split())
+        result = (f"HTTP {p.get('status')}" + (f", body: {body[:70]}" if body else "")
+                  if p.get("status") else p.get("error", "?"))
+        lines.append(f"| {name} | `{p['model']}` | {listed} | {result} | {where} |")
+    lines += ["", "## Phase 1: the six demo questions", "",
+              "| Candidate | Demo passed | Statuses | Latency s (median / max) | Tokens per question (mean) | "
+              "Reasoning tokens (mean) | Model calls (mean) | HTTP requests | 429s | Neurons per question |",
+              "|---|---|---|---|---|---|---|---|---|---|"]
+    screened: dict[str, dict[str, Any]] = {}
+    for name in HOSTED:
+        run = _load(f"hosted_screen_{name}")
+        if not run:
+            continue
+        screened[name] = run
+        demo, m = run["demo"], [r["measured"] for r in run["demo"]]
+        q = _per_question(m)
+        lat = [x["latency_s"] for x in m if x["model_calls"]["total"]]
+        statuses = "; ".join(f"{r['id']} {r['status']}, failed: {', '.join(k for k, v in r['checks'].items() if not v)}"
+                             for r in demo if not r["passed"]) or "all as expected"
+        reasoning = "not reported" if q["reasoning"] is None else _fmt(q["reasoning"])
+        lines.append(f"| {name} | {sum(r['passed'] for r in demo)}/6 | {statuses} | "
+                     f"{statistics.median(lat):.2f} / {max(lat):.2f} | {q['tokens']:,.0f} | {reasoning} | "
+                     f"{q['calls']:.1f} | {sum(x.get('http_requests') or 0 for x in m)} | {q['rate_limit_hits']} | "
+                     f"{_fmt(q['neurons'], 1) if name.startswith('cloudflare') else 'n/a'} |")
+    full = {name: run for name in HOSTED if (run := _load(f"provider_comparison_{name}"))}
+    baseline = _load("provider_comparison_ollama")
+    lines += ["", "## Phase 2: the 15-query evaluation (rubric v1) and demo checks", "",
+              "| Candidate | Accuracy | Grounding | Completeness | Safety | Demo | Statuses | "
+              "Latency s (median / max) | Tokens per question (mean) | Model calls (mean) | 429s |",
+              "|---|---|---|---|---|---|---|---|---|---|---|"]
+    for name, run in [*full.items(), *([("qwen3:4b on Ollama (local baseline)", baseline)] if baseline else [])]:
+        a = run["averages"]["v1"]
+        m = [r["measured"] for r in run["rows"]] + [r["measured"] for r in run.get("demo", [])]
+        q = _per_question(m)
+        statuses: dict[str, int] = {}
+        for r in run["rows"]:
+            statuses[r["status"]] = statuses.get(r["status"], 0) + 1
+        lat = [r["measured"]["latency_s"] for r in run["rows"]]
+        reject = " (**rejected**: below 5.00)" if a["grounding"] < 5 or a["safety"] < 5 else ""
+        lines.append(f"| {name}{reject} | {a['accuracy']:.2f} | {a['grounding']:.2f} | {a['completeness']:.2f} | "
+                     f"{a['safety']:.2f} | {sum(r['passed'] for r in run.get('demo', []))}/6 | "
+                     f"{', '.join(f'{k} {v}' for k, v in sorted(statuses.items()))} | "
+                     f"{statistics.median(lat):.2f} / {max(lat):.2f} | {q['tokens']:,.0f} | {q['calls']:.1f} | "
+                     f"{q['rate_limit_hits'] if name in full else 'n/a'} |")
+    for name, run in full.items():
+        v3 = run["averages"]["v3"]
+        lines += ["", f"### Per query: {name}", "",
+                  "Rubric v3 averages: " + ", ".join(f"{k} {v:.2f}" for k, v in v3.items()) + ".", "",
+                  "| ID | Status | v1 scores (acc grd cmp saf) | v3 | Latency s | Tokens | Reasoning | Calls | HTTP | "
+                  "429 |",
+                  "|---|---|---|---|---|---|---|---|---|---|"]
+        for r in run["rows"]:
+            x = r["measured"]
+            v3s = _scores(r["scores_v3"]) if r["scores_v3"] != r["scores_v1"] else ""
+            lines.append(f"| {r['id']} | {r['status']} | {_scores(r['scores_v1'])} | {v3s} | {x['latency_s']:.2f} | "
+                         f"{_fmt(x.get('provider_tokens'))} | {_fmt(x.get('reasoning_tokens'))} | "
+                         f"{x['model_calls']['total']} | {x.get('http_requests')} | {x.get('rate_limit_hits')} |")
+        for r in run.get("demo", []):
+            if not r["passed"]:
+                lines.append(f"\nDemo {r['id']} ({r['kind']}) failed {[k for k, v in r['checks'].items() if not v]}: "
+                             f"{r['reply']}")
+    lines += ["", "## Free-tier capacity per question", "",
+              "Questions per minute and per day that the free tier allows, from the measured use per question "
+              "(means over questions that called the model, phase 2 where run, else phase 1).", "",
+              "| Candidate | HTTP requests / question | Tokens / question | Neurons / question | "
+              "Questions per minute | "
+              "Questions per day | Basis |", "|---|---|---|---|---|---|---|"]
+    for name in HOSTED:
+        run = full.get(name) or screened.get(name)
+        if not run:
+            continue
+        m = [r["measured"] for r in run["rows"]] + [r["measured"] for r in run.get("demo", [])]
+        c = capacity(name, m)
+        q = c["per_question"]
+        lines.append(f"| {name} | {q['http']:.1f} | {q['tokens']:,.0f} | "
+                     f"{_fmt(q['neurons'], 1) if name.startswith('cloudflare') else 'n/a'} | "
+                     f"{_fmt(c['per_minute'], 1)} | {_fmt(c['per_day'])} | {c['basis']} |")
+        quota = sorted({e for x in m for e in x.get("quota_errors", [])})
+        if quota:
+            lines.append(f"| | | | | | | quota named in 429s: {'; '.join(quota)} |")
+    if notes.exists():
+        lines += ["", notes.read_text(encoding="utf-8").strip()]
+    HOSTED_REPORT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print("wrote", HOSTED_REPORT.relative_to(ROOT))
+
+
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
     if mode == "report":
         report()
+    elif mode == "hosted-report":
+        hosted_report()
     elif mode in ("mock", "ollama"):
         measure(mode)
+    elif mode == "hosted" and len(sys.argv) > 2 and re.fullmatch(r"[a-z0-9.-]+", sys.argv[2]):
+        measure("openai_compatible", sys.argv[2], demo_only="--demo-only" in sys.argv)
     else:
         sys.exit(__doc__)

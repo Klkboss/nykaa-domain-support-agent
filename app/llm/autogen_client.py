@@ -98,6 +98,8 @@ def build_review_client(settings: LLMSettings, budget: RequestBudget | None = No
     if not settings.is_real:
         raise LLMConfigError("build_review_client needs a real provider (LLM_PROVIDER=ollama or openai_compatible).")
     extra: dict[str, Any] = {"http_client": http_client} if http_client is not None else {}
+    if settings.reasoning_effort:
+        extra["reasoning_effort"] = settings.reasoning_effort
     inner = OpenAIChatCompletionClient(
         model=settings.model,
         base_url=settings.base_url,

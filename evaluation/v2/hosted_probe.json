@@ -1,0 +1,277 @@
+{
+  "github-models-gpt-4.1": {
+    "base_url": "https://models.github.ai/inference",
+    "model": "openai/gpt-4.1",
+    "key_variable": "GITHUB_MODELS_TOKEN",
+    "reasoning_effort": null,
+    "model_listed": "HTTP 200, not JSON (text/plain)",
+    "related_models": [],
+    "latency_s": 4.23,
+    "status": 200,
+    "content_type": "text/plain",
+    "rate_limit_headers": {},
+    "error_body": "OK\r\n",
+    "probed_at_utc": "2026-11-22T19:28:06Z"
+  },
+  "groq-gpt-oss-120b": {
+    "base_url": "https://api.groq.com/openai/v1",
+    "model": "openai/gpt-oss-120b",
+    "key_variable": "GROQ_API_KEY",
+    "reasoning_effort": "low",
+    "model_listed": true,
+    "related_models": [
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "openai/gpt-oss-safeguard-20b"
+    ],
+    "latency_s": 0.6,
+    "status": 200,
+    "content_type": "application/json",
+    "rate_limit_headers": {
+      "x-ratelimit-limit-requests": "1000",
+      "x-ratelimit-limit-tokens": "8000",
+      "x-ratelimit-remaining-requests": "998",
+      "x-ratelimit-remaining-tokens": "7264",
+      "x-ratelimit-reset-requests": "2m52.8s",
+      "x-ratelimit-reset-tokens": "5.52s"
+    },
+    "message_fields": [
+      "content",
+      "reasoning",
+      "role"
+    ],
+    "reasoning_field_chars": {
+      "reasoning": 252
+    },
+    "content_starts_with_think_tag": false,
+    "content": "{\n  \"quotes\": [\n    \"Returns are accepted within 15 days of delivery.\"\n  ]\n}",
+    "finish_reason": "stop",
+    "usage": {
+      "queue_time": 0.328389767,
+      "prompt_tokens": 157,
+      "prompt_time": 0.040259531,
+      "completion_tokens": 83,
+      "completion_time": 0.172195667,
+      "total_tokens": 240,
+      "total_time": 0.212455198,
+      "completion_tokens_details": {
+        "reasoning_tokens": 50
+      }
+    },
+    "probed_at_utc": "2026-11-22T19:27:26Z"
+  },
+  "groq-gpt-oss-20b": {
+    "base_url": "https://api.groq.com/openai/v1",
+    "model": "openai/gpt-oss-20b",
+    "key_variable": "GROQ_API_KEY",
+    "reasoning_effort": "low",
+    "model_listed": true,
+    "related_models": [
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "openai/gpt-oss-safeguard-20b"
+    ],
+    "latency_s": 2.94,
+    "status": 200,
+    "content_type": "application/json",
+    "rate_limit_headers": {
+      "x-ratelimit-limit-requests": "1000",
+      "x-ratelimit-limit-tokens": "8000",
+      "x-ratelimit-remaining-requests": "998",
+      "x-ratelimit-remaining-tokens": "7803",
+      "x-ratelimit-reset-requests": "2m52.8s",
+      "x-ratelimit-reset-tokens": "1.477s"
+    },
+    "message_fields": [
+      "content",
+      "reasoning",
+      "role"
+    ],
+    "reasoning_field_chars": {
+      "reasoning": 75
+    },
+    "content_starts_with_think_tag": false,
+    "content": "{\"quotes\":[\"Returns are accepted within 15 days of delivery.\"]}",
+    "finish_reason": "stop",
+    "usage": {
+      "queue_time": 0.317718917,
+      "prompt_tokens": 157,
+      "prompt_time": 0.01804013,
+      "completion_tokens": 40,
+      "completion_time": 0.043723876,
+      "total_tokens": 197,
+      "total_time": 0.061764006,
+      "completion_tokens_details": {
+        "reasoning_tokens": 13
+      }
+    },
+    "probed_at_utc": "2026-11-22T19:27:30Z"
+  },
+  "gemini-3-flash": {
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "model": "gemini-3-flash-preview",
+    "key_variable": "GEMINI_API_KEY",
+    "reasoning_effort": "low",
+    "model_listed": true,
+    "related_models": [
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-image",
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-flash-native-audio-latest",
+      "gemini-2.5-flash-native-audio-preview-09-2025",
+      "gemini-2.5-flash-native-audio-preview-12-2025",
+      "gemini-2.5-flash-preview-tts",
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-image",
+      "gemini-3.1-flash-image-preview",
+      "gemini-3.1-flash-lite",
+      "gemini-3.1-flash-lite-image",
+      "gemini-3.1-flash-lite-preview",
+      "gemini-3.1-flash-live-preview",
+      "gemini-3.1-flash-tts-preview",
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.6-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash",
+      "gemini-3.8-flash-lite-tts",
+      "gemini-3.8-flash-tts",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest",
+      "gemini-omni-1.1-flash",
+      "gemini-omni-1.2-flash",
+      "gemini-omni-flash-preview"
+    ],
+    "latency_s": 2.11,
+    "status": 200,
+    "content_type": "application/json",
+    "rate_limit_headers": {},
+    "message_fields": [
+      "content",
+      "extra_content",
+      "role"
+    ],
+    "reasoning_field_chars": {},
+    "content_starts_with_think_tag": false,
+    "content": "{\"quotes\":[\"Returns are accepted within 15 days of delivery.\"]}",
+    "finish_reason": "stop",
+    "usage": {
+      "completion_tokens": 15,
+      "prompt_tokens": 49,
+      "total_tokens": 342
+    },
+    "probed_at_utc": "2026-11-22T19:27:33Z"
+  },
+  "cloudflare-gpt-oss-120b": {
+    "base_url": "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+    "model": "@cf/openai/gpt-oss-120b",
+    "key_variable": "CLOUDFLARE_API_TOKEN",
+    "reasoning_effort": "low",
+    "model_listed": true,
+    "related_models": [
+      "@cf/openai/gpt-oss-120b",
+      "@cf/openai/gpt-oss-20b"
+    ],
+    "latency_s": 3.41,
+    "status": 200,
+    "content_type": "application/json",
+    "rate_limit_headers": {},
+    "message_fields": [
+      "content",
+      "reasoning",
+      "reasoning_content",
+      "role"
+    ],
+    "reasoning_field_chars": {
+      "reasoning": 111,
+      "reasoning_content": 111
+    },
+    "content_starts_with_think_tag": false,
+    "content": "{\n  \"quotes\": [\n    \"Returns are accepted within 15 days of delivery.\"\n  ]\n}",
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 110,
+      "completion_tokens": 60,
+      "total_tokens": 170,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "neurons": 7.590888023376465
+    },
+    "probed_at_utc": "2026-11-22T19:27:37Z"
+  },
+  "cloudflare-gpt-oss-20b": {
+    "base_url": "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+    "model": "@cf/openai/gpt-oss-20b",
+    "key_variable": "CLOUDFLARE_API_TOKEN",
+    "reasoning_effort": "low",
+    "model_listed": true,
+    "related_models": [
+      "@cf/openai/gpt-oss-120b",
+      "@cf/openai/gpt-oss-20b"
+    ],
+    "latency_s": 1.93,
+    "status": 200,
+    "content_type": "application/json",
+    "rate_limit_headers": {},
+    "message_fields": [
+      "content",
+      "reasoning_content",
+      "role"
+    ],
+    "reasoning_field_chars": {
+      "reasoning_content": 344
+    },
+    "content_starts_with_think_tag": false,
+    "content": "{\"quotes\":[\"Returns are accepted within 15 days of delivery.\"]}",
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 116,
+      "completion_tokens": 99,
+      "total_tokens": 215,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "neurons": 4.8090861
+    },
+    "probed_at_utc": "2026-11-22T19:27:40Z"
+  },
+  "gemini-3.8-flash": {
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "model": "gemini-3.8-flash",
+    "key_variable": "GEMINI_API_KEY",
+    "reasoning_effort": "low",
+    "model_listed": true,
+    "related_models": [
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-image",
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-flash-native-audio-latest",
+      "gemini-2.5-flash-native-audio-preview-09-2025",
+      "gemini-2.5-flash-native-audio-preview-12-2025",
+      "gemini-2.5-flash-preview-tts",
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-image",
+      "gemini-3.1-flash-image-preview",
+      "gemini-3.1-flash-lite",
+      "gemini-3.1-flash-lite-image",
+      "gemini-3.1-flash-lite-preview",
+      "gemini-3.1-flash-live-preview",
+      "gemini-3.1-flash-tts-preview",
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-lite",
+      "gemini-3.6-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash",
+      "gemini-3.8-flash-lite-tts",
+      "gemini-3.8-flash-tts",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest",
+      "gemini-omni-1.1-flash",
+      "gemini-omni-1.2-flash",
+      "gemini-omni-flash-preview"
+    ],
+    "error": "ReadTimeout",
+    "probed_at_utc": "2026-11-22T19:56:36Z"
+  }
+}

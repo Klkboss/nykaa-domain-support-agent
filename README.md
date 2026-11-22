@@ -70,7 +70,7 @@ policy claims or leave them out; it can never add text, citations or order facts
 |---|---|---|
 | `mock` (default; forced while `MOCK_LLM=true`) | nothing | the graded capstone, tests, CI: deterministic and offline |
 | `ollama` | a local Ollama server; no key | local real-model runs (default model `qwen3:4b-instruct-2507-q4_K_M`) |
-| `openai_compatible` | `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` if the server needs one | any other OpenAI-compatible server |
+| `openai_compatible` | `LLM_BASE_URL`, `LLM_MODEL`, and the key (`LLM_API_KEY`, or `LLM_API_KEY_ENV` naming the variable that holds it) | any other OpenAI-compatible server, including the hosted free tiers below |
 
 ### Run it
 **1. Python venv, mock (the capstone behaviour):**
@@ -104,8 +104,10 @@ All are optional; `.env.example` lists them with comments. `.env` is never loade
 | `MOCK_LLM` | `true` | `true` forces the deterministic mock, whatever `LLM_PROVIDER` says |
 | `LLM_PROVIDER` | `mock` | `mock`, `ollama` or `openai_compatible` |
 | `LLM_MODEL` | provider default | model name (Ollama: `qwen3:4b-instruct-2507-q4_K_M`) |
-| `OLLAMA_BASE_URL` / `LLM_BASE_URL` | `http://127.0.0.1:11434` / none | server URL (`/v1` is added for Ollama) |
+| `OLLAMA_BASE_URL` / `LLM_BASE_URL` | `http://127.0.0.1:11434` / none | server URL (`/v1` is added for Ollama); `${NAME}` in `LLM_BASE_URL` is replaced by that variable |
 | `LLM_API_KEY` | none | only for servers that need one; never committed |
+| `LLM_API_KEY_ENV` | none | the NAME of the variable holding the key (e.g. `GROQ_API_KEY`); wins over `LLM_API_KEY` |
+| `LLM_REASONING_EFFORT` | not sent | `none`/`minimal`/`low`/`medium`/`high` for reasoning models (gpt-oss, Gemini) |
 | `LLM_TEMPERATURE`, `LLM_TIMEOUT_S`, `LLM_MAX_TOKENS` | `0`, `120`, `1024` | generation controls |
 | `LLM_MAX_RETRIES` | `0` for Ollama, `2` otherwise | transport retries (low, so a stopped server fails fast) |
 | `DATABASE_URL` | none (in-memory) | PostgreSQL URL; `postgres://` and `postgresql://` both work |
@@ -267,8 +269,32 @@ that throttle time.
 | **qwen3:4b-instruct-2507** (chosen) | 8/12 → **12/12** after the rules in code | 10/12 → **12/12** | 0 | 7.98 / 10.61 → 5.86 / 12.92 | 100 % |
 | qwen2.5:7b-instruct | 8/12 | 6/12 | 3 | 18.67 / 23.99 | 82 % (spills to CPU) |
 
+### Hosted free-tier providers (for a future online demo)
+Measured through the same `openai_compatible` provider, free tiers only, in
+[evaluation/V2_HOSTED_PROVIDERS.md](evaluation/V2_HOSTED_PROVIDERS.md): six demo questions on every candidate, then
+the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` throughout. One run each.
+
+| Provider and model | Accuracy | Grounding | Completeness | Safety | Demo | Latency s, median / max | Free questions per day |
+|---|---|---|---|---|---|---|---|
+| **Cloudflare `@cf/openai/gpt-oss-120b`** (recommended) | **4.73** | 5.00 | 4.73 | 5.00 | **6/6** | 16.80 / 22.35 | ~99 (10,000 Neurons/day; ~101 per question) |
+| Groq `openai/gpt-oss-120b` (1st fallback) | 4.33 | 5.00 | 5.00 | 5.00 | **6/6** | 7.02 / 10.03 | ~62 (200,000 tokens/day), ~2.5 per minute |
+| Groq `openai/gpt-oss-20b` (2nd fallback) | 4.60 | 5.00 | 5.00 | 5.00 | 5/6 | 6.02 / 7.63 | ~65 |
+| qwen3:4b on Ollama (local baseline) | 4.60 | 5.00 | 5.00 | 5.00 | 5/6 | 8.28 / 12.42 | local GPU |
+
+- **Not suitable:**
+  - **Gemini 3 Flash:** its free tier names a quota of 20 requests a day and 5 a minute, about 4 questions a day.
+    Free-tier content may be used to improve Google's products, and the free tier may not serve users in the
+    EEA, Switzerland or the UK.
+  - **Cloudflare gpt-oss-20b:** failed 2 of 6 demo questions.
+  - **GitHub Models:** retired by GitHub on 2026-07-30; the endpoint now returns only `OK`.
+- **Reasoning text stays out of the answer:** reasoning models return it in a separate field, and only the final
+  answer enters the pipeline. A fix in this run stops AutoGen's "thought" messages being read as reviewer flags.
+- **Keys:** read from `.env` by variable name, never logged or written to reports. Tests use none.
+- **Before going public:** a site-wide daily cap and a "busy, please retry" reply are still to be built. See the
+  report's demo-mode section for these and the Azure for Students hosting notes.
+
 ### Tests and CI
-- **792 tests:** the capstone's **664 are unchanged**, plus 128 v2 tests. They run offline with outbound network
+- **800 tests:** the capstone's **664 are unchanged**, plus 136 v2 tests. They run offline with outbound network
   blocked.
   - The 5 PostgreSQL tests run only with `TEST_DATABASE_URL`, and in CI against a service container.
   - `tests_live/` (4 smoke tests against a real Ollama) runs only with `LIVE_LLM=1`.

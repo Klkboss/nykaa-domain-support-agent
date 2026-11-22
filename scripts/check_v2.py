@@ -12,7 +12,7 @@ import sys
 
 V2_PATHS = ["app/llm", "app/db", "migrations", "tests_v2", "tests_live", "scripts/check_v2.py",
             "scripts/measure_providers.py", "scripts/seed_db.py", "scripts/smoke_api.py", "app/api/rate_limit.py",
-            "scripts/run_provider_comparison.py", "scripts/capture_screenshots.py"]
+            "scripts/run_provider_comparison.py", "scripts/capture_screenshots.py", "scripts/probe_hosted_providers.py"]
 V2_MODULES = ["app/llm", "app/db", "app/api/rate_limit.py"]
 
 

@@ -29,7 +29,8 @@ from app.rag.evaluation import dedupe
 from app.rag.generation import MockGroundedGenerator, _is_complete, contiguous_passages
 from app.rag.retrieval import RetrievedChunk
 
-# The JSON answer is at most a few quoted sentences: well under 400 tokens.
+# The JSON answer is at most a few quoted sentences: well under 400 tokens. A reasoning model (LLM_REASONING_EFFORT
+# set) also spends its thinking tokens from the same cap, so it gets LLM_MAX_TOKENS instead.
 GENERATION_MAX_TOKENS = 400
 SYSTEM_PROMPT = (
     "You answer customer questions about Nykaa policies using ONLY the numbered policy sentences you are given. "
@@ -99,13 +100,15 @@ class LLMGroundedGenerator(MockGroundedGenerator):
         messages = [{"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": f"Policy sentences:\n{numbered}\n\nCustomer question: {query}"}]
         prompt = SYSTEM_PROMPT + messages[1]["content"]
-        with metered(self.budget, prompt, GENERATION_MAX_TOKENS) as spend:
+        cap = GENERATION_MAX_TOKENS if self.settings.reasoning_effort is None else self.settings.max_tokens
+        extra = {"reasoning_effort": self.settings.reasoning_effort} if self.settings.reasoning_effort else {}
+        with metered(self.budget, prompt, cap) as spend:
             response = self._client.chat.completions.create(  # type: ignore[call-overload]  # plain dicts
                 model=self.settings.model, messages=messages,
-                temperature=self.settings.temperature, max_tokens=GENERATION_MAX_TOKENS,
-                response_format=RESPONSE_FORMAT,
+                temperature=self.settings.temperature, max_tokens=cap,
+                response_format=RESPONSE_FORMAT, **extra,
             )
-            content = response.choices[0].message.content or ""
+            content = response.choices[0].message.content or ""  # reasoning arrives in its own field, never here
             usage = response.usage
             spend.actual = reported_or_estimated(usage.total_tokens if usage else 0, prompt, content)
         try:

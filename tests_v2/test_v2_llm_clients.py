@@ -201,3 +201,34 @@ def test_review_client_refuses_unmetered_streaming():
     client = build_review_client(settings(), None, http_client=FakeServer(completion()).async_client())
     with pytest.raises(NotImplementedError):
         client.create_stream([UserMessage(content="hi", source="user")])
+
+
+# --- reasoning models (hosted gpt-oss, Gemini) ------------------------------------------------------------------
+
+@pytest.mark.parametrize("effort", [None, "low"])
+def test_reasoning_effort_is_sent_only_when_configured(effort):
+    from app.llm.generator import GENERATION_MAX_TOKENS, LLMGroundedGenerator
+    from app.rag.retrieval import RetrievedChunk
+
+    crew_server, review_server = FakeServer(completion("ok")), FakeServer(completion("ok"))
+    crew_call(crew_server, reasoning_effort=effort)
+    client = build_review_client(settings(reasoning_effort=effort), None, http_client=review_server.async_client())
+    asyncio.run(client.create([UserMessage(content="x", source="user")]))
+    gen_server = FakeServer(completion('{"quotes": ["Returns are accepted within 15 days."]}'))
+    gen = LLMGroundedGenerator(settings(reasoning_effort=effort, max_tokens=900), http_client=gen_server.sync_client())
+    chunk = RetrievedChunk(chunk_id="c", doc_id="KB-01", text="Returns are accepted within 15 days.",
+                           similarity=0.9, metadata={})
+    assert gen.generate("Can I return shoes?", [chunk]) == "Returns are accepted within 15 days."
+    for server in (crew_server, review_server, gen_server):
+        assert server.bodies()[0].get("reasoning_effort") == effort
+    # thinking tokens come out of the same completion cap, so a reasoning model gets LLM_MAX_TOKENS
+    assert gen_server.bodies()[0]["max_tokens"] == (GENERATION_MAX_TOKENS if effort is None else 900)
+
+
+def test_reasoning_text_in_its_own_field_never_becomes_the_answer():
+    thought = "UNSUPPORTED: everything. The user wants a refund."
+    server = FakeServer(completion("Within 30 days.", reasoning=thought, reasoning_content=thought))
+    assert crew_call(server) == "Within 30 days."
+    review_server = FakeServer(completion("ALL CLAIMS SUPPORTED", reasoning_content=thought))
+    _, result = review_create(review_server)
+    assert result.content == "ALL CLAIMS SUPPORTED" and result.thought == thought  # AutoGen keeps it apart

@@ -63,7 +63,8 @@ def no_network_attempts_v2():
 @pytest.fixture(autouse=True)
 def no_ambient_llm_settings(monkeypatch):
     """A developer's shell LLM_* / JUDGE_PROVIDER values must never leak into a test."""
-    for name in (*REAL_ENV, "LLM_API_KEY", "OLLAMA_BASE_URL", "LLM_TEMPERATURE", "LLM_TIMEOUT_S", "LLM_MAX_TOKENS",
+    for name in (*REAL_ENV, "LLM_API_KEY", "LLM_API_KEY_ENV", "LLM_REASONING_EFFORT", "OLLAMA_BASE_URL",
+                 "LLM_TEMPERATURE", "LLM_TIMEOUT_S", "LLM_MAX_TOKENS",
                  "JUDGE_PROVIDER", "DATABASE_URL"):
         monkeypatch.delenv(name, raising=False)
 

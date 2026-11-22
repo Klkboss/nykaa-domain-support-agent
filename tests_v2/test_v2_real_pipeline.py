@@ -519,3 +519,14 @@ def test_judge_provider_llm_uses_the_real_model(real_provider, monkeypatch):
     result, raw, _ = judge_module.judge({"accuracy": "r"}, {"query": "q", "reply": "r"})
     assert result.grounding == 5 and json.loads(raw)["safety"] == 5
     assert fake.requests[0]["response_format"]["json_schema"]["name"] == "JudgeScores"
+
+
+def test_a_reasoning_models_thoughts_are_never_read_as_reviewer_flags(assistant, collections):
+    """Hosted gpt-oss on Cloudflare returns `reasoning_content`; AutoGen turns it into a ThoughtEvent from the
+    reviewer. Its text (which may mention UNSUPPORTED) is reasoning, not the reviewer's answer."""
+    thought = "Let me check each sentence.\nUNSUPPORTED: Refunds are instant for every order.\nNo, it is not."
+    a, (s1, s2) = two_claim_assistant(
+        assistant, collections, reviewer=completion("ALL CLAIMS SUPPORTED", reasoning_content=thought))
+    r = ask(a, SHOES)
+    assert r.status == "answered" and s1 in r.reply and s2 in r.reply and "Let me check" not in r.reply
+    assert a.last_review.verdict.approved and a.last_review.flagged == ()

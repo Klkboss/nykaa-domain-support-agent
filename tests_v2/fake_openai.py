@@ -15,8 +15,9 @@ BASE_URL = "http://llm.test/v1"  # non-loopback: an unmocked request would hit t
 
 
 def completion(content: str | None = "ok", usage: tuple[int, int] | None = (11, 3),
-               tool_calls: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    message: dict[str, Any] = {"role": "assistant", "content": content}
+               tool_calls: list[dict[str, Any]] | None = None, **reasoning: str) -> dict[str, Any]:
+    """`reasoning` adds a reasoning model's separate fields: reasoning=... (Groq) or reasoning_content=..."""
+    message: dict[str, Any] = {"role": "assistant", "content": content, **reasoning}
     if tool_calls:
         message["tool_calls"] = tool_calls
     body: dict[str, Any] = {"id": "cmpl-1", "object": "chat.completion", "created": 0, "model": "fake",

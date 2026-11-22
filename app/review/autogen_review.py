@@ -35,7 +35,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 
 from autogen_agentchat.agents import AssistantAgent
-from autogen_agentchat.messages import StructuredMessage
+from autogen_agentchat.messages import StructuredMessage, ThoughtEvent
 from autogen_agentchat.teams import RoundRobinGroupChat
 
 from app.core.mock_autogen import MockChatCompletionClient
@@ -198,7 +198,9 @@ def review_flags(reviewer_text: str, draft: str, context: str) -> ReviewFlags:
 
 def _code_verdict(text: str, context: str, messages: list) -> tuple[Verdict, ReviewFlags]:
     """Options B and B+: the verdict is computed in code from the reviewer's flags and the ORIGINAL draft."""
-    reviewer_text = "\n".join(str(m.content) for m in messages if getattr(m, "source", "") == REVIEWER_NAME)
+    # ThoughtEvent: a reasoning model's `reasoning_content` (AutoGen's "thought"), never the reviewer's answer
+    reviewer_text = "\n".join(str(m.content) for m in messages
+                              if getattr(m, "source", "") == REVIEWER_NAME and not isinstance(m, ThoughtEvent))
     flags = review_flags(reviewer_text, text, context)
     if not flags.readable:
         reason = "The reviewer's output could not be matched to the draft, so all policy text was removed (fail-safe)."
