@@ -104,6 +104,32 @@ def test_chat_history_survives_a_restart_and_holds_masked_text_only(db, collecti
         assert s.query(ChatMessage).filter_by(session_id=sid).count() == 0
 
 
+def simultaneous_first_writes(rounds: int = 10, writers: int = 8) -> None:
+    """Several requests write the FIRST turn of the same brand-new session at the same moment: all must succeed."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    from langchain_core.messages import AIMessage, HumanMessage
+
+    from app.db.repositories import SQLChatMessageHistory
+
+    for _ in range(rounds):
+        sid = f"race-{uuid.uuid4().hex[:8]}"
+        start = threading.Barrier(writers)
+
+        def write(i: int, sid: str = sid, start: threading.Barrier = start) -> None:
+            start.wait()
+            SQLChatMessageHistory(sid).add_messages([HumanMessage(f"q{i}"), AIMessage(f"a{i}")])
+
+        with ThreadPoolExecutor(writers) as pool:
+            list(pool.map(write, range(writers)))  # re-raises any writer's exception
+        assert len(SQLChatMessageHistory(sid).messages) == 2 * writers
+
+
+def test_simultaneous_first_writes_to_a_new_session_all_succeed(db):
+    simultaneous_first_writes()
+
+
 def test_request_log_rows_are_the_masked_jsonl_records(db, tmp_path):
     from app.observability.logging import JsonlLogger
 

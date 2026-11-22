@@ -20,7 +20,7 @@ from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from sqlalchemy import inspect, text
 
-from tests_v2.test_v2_db import TABLES, alembic_config
+from tests_v2.test_v2_db import TABLES, alembic_config, simultaneous_first_writes
 
 RAW_URL = os.environ.get("TEST_DATABASE_URL", "")
 
@@ -107,3 +107,7 @@ def test_pipeline_history_and_request_log_on_postgres(pg, collections, tmp_path)
     with session() as s:
         row = s.query(RequestLog).filter_by(trace_id=sid).one()
     assert "4111" not in json.dumps(row.record)
+
+
+def test_simultaneous_first_writes_to_a_new_session_all_succeed_on_postgres(pg):
+    simultaneous_first_writes()

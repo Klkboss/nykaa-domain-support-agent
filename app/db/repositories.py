@@ -9,7 +9,9 @@ from typing import Any
 
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.db import session
 from app.db.models import ChatMessage, ChatSession, Order, RequestLog
@@ -51,11 +53,10 @@ class SQLChatMessageHistory(BaseChatMessageHistory):
 
     def add_messages(self, messages: Sequence[BaseMessage]) -> None:
         with session() as s, s.begin():
-            if s.get(ChatSession, self.session_id) is None:
-                s.add(ChatSession(id=self.session_id))
-                s.flush()
-            else:
-                s.execute(update(ChatSession).where(ChatSession.id == self.session_id).values(updated_at=func.now()))
+            # One atomic upsert, not check-then-insert: simultaneous first writes to a new session must all succeed.
+            upsert = pg_insert if s.get_bind().dialect.name == "postgresql" else sqlite_insert
+            stmt = upsert(ChatSession).values(id=self.session_id)
+            s.execute(stmt.on_conflict_do_update(index_elements=[ChatSession.id], set_={"updated_at": func.now()}))
             s.add_all([ChatMessage(session_id=self.session_id, role=m.type, content=str(m.content))
                        for m in messages])
 
