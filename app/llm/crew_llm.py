@@ -15,9 +15,12 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 import httpx
+from crewai.llms import retry as crewai_retry
 from crewai.llms.providers.openai.completion import OpenAICompletion
 from openai import OpenAI
 from pydantic import BaseModel, PrivateAttr
@@ -29,6 +32,19 @@ from app.llm.settings import LLMSettings
 
 HIDDEN = "provider error details hidden; see the typed error in the response or the JSONL log"
 _SDK_ERROR_BODY = re.compile(r"(Error code: \d{3}) - .*", re.S)
+
+
+@contextmanager
+def without_crewai_rate_limit_retry() -> Iterator[None]:
+    """Inside, every CrewAI LLM call runs once: CrewAI's own 429 retry (3 attempts, each waiting Retry-After) is
+    skipped, so a failover can start at once. CrewAI skips its loop when this flag says a retry is already running.
+    shortcut: a private flag of crewai 1.15.33 (pinned); on a CrewAI upgrade, check that
+    test_a_429_with_retry_after_fails_over_at_once_and_the_fallback_keeps_its_retries still passes."""
+    token = crewai_retry._active_llm_rate_limit_retry.set(True)
+    try:
+        yield
+    finally:
+        crewai_retry._active_llm_rate_limit_retry.reset(token)
 
 
 def redact_provider_text(message: str) -> str:

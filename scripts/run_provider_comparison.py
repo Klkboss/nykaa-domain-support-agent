@@ -129,7 +129,7 @@ class WireLog:
         log = self
 
         def simulated(request: Any) -> Any:
-            return httpx.Response(429, headers={"retry-after": "0"}, request=request,
+            return httpx.Response(429, headers={"retry-after": "30"}, request=request,
                                   json={"error": {"message": "simulated rate limit (EVAL_FORCE_429_HOST)"}})
 
         def send(client: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
@@ -666,9 +666,10 @@ def hosted_report() -> None:
          "failover-forced-groq-429")) if (run := _load(f"hosted_screen_{name}"))]
     if runs:
         lines += ["", "## Failover: the six demo questions", "",
-                  "`LLM_MAX_RETRIES=0`, so a provider error reaches the failover after CrewAI's own three attempts. "
-                  "**Answered by** is the provider the pipeline reports for the reply "
-                  "(the chat UI shows the same).", ""]
+                  "With a fallback configured, the primary gets no retries (neither the SDK's nor CrewAI's), so "
+                  "its first provider error starts the failover at once; the fallback keeps its retries. The "
+                  "simulated 429 asks for a 30 s Retry-After, which is never waited on. **Answered by** is the "
+                  "provider the pipeline reports for the reply (the chat UI shows the same).", ""]
     for title, run in runs:
         demo = run["demo"]
         lines += [f"### {title}: {sum(r['passed'] for r in demo)}/6 passed", "",

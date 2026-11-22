@@ -77,7 +77,10 @@ closed instead of billing, and no training on customer content.
 `@cf/openai/gpt-oss-120b` second**. Built and measured (the failover tables above):
 - **Failover:** a request that fails with any provider error (rate limit, outage, timeout, HTTP error, bad key) is
   run again **from the start** on the fallback (`LLM_FALLBACK_*` in `.env`; the order is which provider is set as
-  primary). Each attempt gets its own token budget with the same cap. A failure that is not the provider's (an
+  primary). Each attempt gets its own token budget with the same cap.
+- **No waiting on the primary:** with a fallback configured, the primary runs with no retries at all: the OpenAI
+  SDK's are set to 0 and CrewAI's own 429 retry is skipped. Its first rate limit or outage therefore starts the
+  failover at once, and its `Retry-After` is never waited on. The fallback keeps the normal retries. A failure that is not the provider's (an
   invalid draft, for example) is not retried elsewhere and keeps the generic reply.
 - **Busy reply:** if no provider could answer, the visitor gets "The assistant is busy right now. Please try again
   in a minute." instead of the generic error.
@@ -87,10 +90,11 @@ closed instead of billing, and no training on customer content.
   That verdict can remove nothing, because on real models the reply is decided in code from the reviewer's flags
   and the verified quotes (options B, B+ and C). This fixes the failures measured on Cloudflare (E08, and D1 and
   D4 on gpt-oss-20b). The phase 1 and 2 numbers above were measured before this fix.
-- **Measured:** with both providers healthy, Groq answered all six demo questions (6/6, 5.7–9.1 s). With every Groq
-  request answered by a simulated 429, Cloudflare took over on every question (6/6, 11.4–22.8 s). The simulated
-  429s carried `retry-after: 0`. A real Groq 429 names a wait in `retry-after`, which CrewAI honours on each of its
-  three attempts, so a real failover adds that wait.
+- **Measured:**
+  - With both providers healthy, Groq answered all six demo questions (6/6, 5.7–9.1 s).
+  - With every Groq request answered by a simulated 429 asking for a 30 s `Retry-After`, each question made exactly
+    one Groq request, and Cloudflare took over at once (6/6, 12.9–22.4 s in total, none of it spent waiting on
+    Groq).
 
 ## Demo mode: settings to stay inside the free tier
 
@@ -99,8 +103,8 @@ In the Docker image and `.env.example`:
 - `RATE_LIMIT_SITE_PER_DAY=70` for all visitors together: 10,000 free Cloudflare Neurons / 134, the most expensive
   measured question, so the whole day fits the fallback's quota even if Groq is out. Groq's own free tier holds
   about 62 questions a day. When the cap is reached, visitors are told the demo has reached its daily limit.
-- `LLM_REASONING_EFFORT=low` and `LLM_MAX_RETRIES=0`, so a rate-limited primary hands over after CrewAI's own three
-  attempts instead of multiplying retries against a free quota.
+- `LLM_REASONING_EFFORT=low`. Leave `LLM_MAX_RETRIES` at its default (2): it now applies to the fallback only,
+  because the primary never retries when a fallback is configured.
 - Keep the generation cache on (the default). It saves the grounded-generation call for a repeated question.
   Whole replies are never cached (governance rule: no full customer responses).
 - Hosted keys stay on the server side; nothing is sent to the browser.

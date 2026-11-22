@@ -11,14 +11,14 @@
     "pace_s": 5.0,
     "key_variable": "GROQ_API_KEY",
     "max_tokens": 1024,
-    "max_retries": 0,
+    "max_retries": 2,
     "fallback": {
       "base_url": "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1",
       "model": "@cf/openai/gpt-oss-120b",
       "key_variable": "CLOUDFLARE_API_TOKEN"
     },
     "simulated_429_host": "api.groq.com",
-    "measured_at_utc": "2026-11-22T21:16:17Z"
+    "measured_at_utc": "2026-11-22T21:37:08Z"
   },
   "judge": null,
   "averages": {},
@@ -57,9 +57,9 @@
       "failover": true,
       "measured": {
         "attempt": 1,
-        "latency_s": 19.87,
+        "latency_s": 18.63,
         "cooled_for_s": 0.0,
-        "tokens": 2723,
+        "tokens": 2726,
         "model_calls": {
           "crew_retrieval": 1,
           "crew_lookup": 1,
@@ -72,28 +72,28 @@
         "gpu_temp_after_c": null,
         "thermal_slowdown_ms": null,
         "power_cap_ms": null,
-        "http_requests": 9,
+        "http_requests": 7,
         "http_statuses": {
-          "429": 3,
+          "429": 1,
           "200": 6
         },
-        "rate_limit_hits": 3,
+        "rate_limit_hits": 1,
         "http_by_host": {
           "api.groq.com": {
-            "429": 3
+            "429": 1
           },
           "api.cloudflare.com": {
             "200": 6
           }
         },
-        "simulated_429s": 3,
-        "provider_tokens": 2723,
+        "simulated_429s": 1,
+        "provider_tokens": 2726,
         "prompt_tokens": 2302,
-        "completion_tokens": 421,
+        "completion_tokens": 424,
         "reasoning_tokens": null,
-        "neurons": 101.95,
+        "neurons": 102.15,
         "last_rate_limit_headers": {
-          "retry-after": "0"
+          "retry-after": "30"
         },
         "quota_errors": []
       },
@@ -122,7 +122,7 @@
       "failover": true,
       "measured": {
         "attempt": 1,
-        "latency_s": 19.71,
+        "latency_s": 14.04,
         "cooled_for_s": 0.0,
         "tokens": 1891,
         "model_calls": {
@@ -137,28 +137,28 @@
         "gpu_temp_after_c": null,
         "thermal_slowdown_ms": null,
         "power_cap_ms": null,
-        "http_requests": 7,
+        "http_requests": 5,
         "http_statuses": {
-          "429": 3,
+          "429": 1,
           "200": 4
         },
-        "rate_limit_hits": 3,
+        "rate_limit_hits": 1,
         "http_by_host": {
           "api.groq.com": {
-            "429": 3
+            "429": 1
           },
           "api.cloudflare.com": {
             "200": 4
           }
         },
-        "simulated_429s": 3,
+        "simulated_429s": 1,
         "provider_tokens": 1891,
         "prompt_tokens": 1542,
         "completion_tokens": 349,
         "reasoning_tokens": null,
         "neurons": 72.86,
         "last_rate_limit_headers": {
-          "retry-after": "0"
+          "retry-after": "30"
         },
         "quota_errors": []
       },
@@ -187,9 +187,9 @@
       "failover": true,
       "measured": {
         "attempt": 1,
-        "latency_s": 16.82,
+        "latency_s": 14.57,
         "cooled_for_s": 0.0,
-        "tokens": 2124,
+        "tokens": 2127,
         "model_calls": {
           "crew_retrieval": 1,
           "crew_lookup": 1,
@@ -202,28 +202,28 @@
         "gpu_temp_after_c": null,
         "thermal_slowdown_ms": null,
         "power_cap_ms": null,
-        "http_requests": 7,
+        "http_requests": 5,
         "http_statuses": {
-          "429": 3,
+          "429": 1,
           "200": 4
         },
-        "rate_limit_hits": 3,
+        "rate_limit_hits": 1,
         "http_by_host": {
           "api.groq.com": {
-            "429": 3
+            "429": 1
           },
           "api.cloudflare.com": {
             "200": 4
           }
         },
-        "simulated_429s": 3,
-        "provider_tokens": 2124,
+        "simulated_429s": 1,
+        "provider_tokens": 2127,
         "prompt_tokens": 1806,
-        "completion_tokens": 318,
+        "completion_tokens": 321,
         "reasoning_tokens": null,
-        "neurons": 79.15,
+        "neurons": 79.35,
         "last_rate_limit_headers": {
-          "retry-after": "0"
+          "retry-after": "30"
         },
         "quota_errors": []
       },
@@ -255,9 +255,9 @@
       "failover": true,
       "measured": {
         "attempt": 1,
-        "latency_s": 22.81,
+        "latency_s": 22.42,
         "cooled_for_s": 0.0,
-        "tokens": 3209,
+        "tokens": 3194,
         "model_calls": {
           "crew_retrieval": 1,
           "crew_lookup": 1,
@@ -270,28 +270,28 @@
         "gpu_temp_after_c": null,
         "thermal_slowdown_ms": null,
         "power_cap_ms": null,
-        "http_requests": 9,
+        "http_requests": 7,
         "http_statuses": {
-          "429": 3,
+          "429": 1,
           "200": 6
         },
-        "rate_limit_hits": 3,
+        "rate_limit_hits": 1,
         "http_by_host": {
           "api.groq.com": {
-            "429": 3
+            "429": 1
           },
           "api.cloudflare.com": {
             "200": 6
           }
         },
-        "simulated_429s": 3,
-        "provider_tokens": 3209,
+        "simulated_429s": 1,
+        "provider_tokens": 3194,
         "prompt_tokens": 2515,
-        "completion_tokens": 694,
+        "completion_tokens": 679,
         "reasoning_tokens": null,
-        "neurons": 127.34,
+        "neurons": 126.32,
         "last_rate_limit_headers": {
-          "retry-after": "0"
+          "retry-after": "30"
         },
         "quota_errors": []
       },
@@ -320,7 +320,7 @@
       "failover": true,
       "measured": {
         "attempt": 1,
-        "latency_s": 11.39,
+        "latency_s": 12.91,
         "cooled_for_s": 0.0,
         "tokens": 1205,
         "model_calls": {
@@ -335,28 +335,28 @@
         "gpu_temp_after_c": null,
         "thermal_slowdown_ms": null,
         "power_cap_ms": null,
-        "http_requests": 6,
+        "http_requests": 4,
         "http_statuses": {
-          "429": 3,
+          "429": 1,
           "200": 3
         },
-        "rate_limit_hits": 3,
+        "rate_limit_hits": 1,
         "http_by_host": {
           "api.groq.com": {
-            "429": 3
+            "429": 1
           },
           "api.cloudflare.com": {
             "200": 3
           }
         },
-        "simulated_429s": 3,
+        "simulated_429s": 1,
         "provider_tokens": 1205,
         "prompt_tokens": 1020,
         "completion_tokens": 185,
         "reasoning_tokens": null,
         "neurons": 45.07,
         "last_rate_limit_headers": {
-          "retry-after": "0"
+          "retry-after": "30"
         },
         "quota_errors": []
       },

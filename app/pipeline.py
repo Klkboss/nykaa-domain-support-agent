@@ -33,6 +33,7 @@ from app.governance.budget import (
 from app.guardrails.groundedness import check_draft
 from app.guardrails.injection import BLOCKED_REPLY, detect_injection
 from app.guardrails.pii import mask_pii
+from app.llm.crew_llm import without_crewai_rate_limit_retry
 from app.llm.errors import classify
 from app.llm.settings import LLMSettings, load_fallback_settings, load_llm_settings, using_llm_settings
 from app.memory.session_memory import get_session_history, has_session, with_session_memory
@@ -147,7 +148,12 @@ class SupportAssistant:
         again from the start on the fallback provider. If no provider could answer, the reply says the assistant is
         busy. Any other failure (an invalid draft, for example) is not retried and keeps the generic reply."""
         trace = inputs["trace"]
-        result = self._attempt(inputs, self.llm_settings)
+        if self.fallback_settings is None:
+            result = self._attempt(inputs, self.llm_settings)
+        else:  # owner decision: never make a visitor wait on the primary's backoff; the fallback keeps its retries
+            primary = self.llm_settings.model_copy(update={"max_retries": 0})  # no SDK retries, no Retry-After wait
+            with using_llm_settings(primary), without_crewai_rate_limit_retry():
+                result = self._attempt(inputs, primary)
         if self.fallback_settings is not None and _provider_failed(result):
             trace.failover = True
             with using_llm_settings(self.fallback_settings):

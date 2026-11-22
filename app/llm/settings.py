@@ -21,6 +21,7 @@ MOCK_LLM=true (the default) forces the mock provider whatever LLM_PROVIDER says.
   LLM_MAX_TOKENS     default 1024 (completion cap per call; also part of each call's budget reservation)
 Failover (optional, openai_compatible): when LLM_FALLBACK_BASE_URL is set, a request that fails with a provider error
 on the provider above is run once more, from the start, on this one (app.pipeline). Order = which is primary.
+With a fallback set, the primary never retries (no SDK or CrewAI retry, no Retry-After wait); the fallback does.
   LLM_FALLBACK_BASE_URL, LLM_FALLBACK_MODEL, LLM_FALLBACK_API_KEY_ENV (or LLM_FALLBACK_API_KEY),
   LLM_FALLBACK_REASONING_EFFORT (default: LLM_REASONING_EFFORT). Temperature, timeout, retries and max tokens
   are shared.

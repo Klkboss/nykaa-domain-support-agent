@@ -298,10 +298,13 @@ the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` thr
   from the start on the fallback (`LLM_FALLBACK_*`; `.env.example` has the full block). If neither can answer, the
   visitor gets "The assistant is busy right now. Please try again in a minute." Other failures keep the generic
   reply and are not retried.
+- **No waiting on Groq:** with a fallback configured, the primary gets no retries (neither the SDK's nor CrewAI's)
+  and its `Retry-After` is never waited on, so a rate limit hands over at once. The fallback keeps its retries.
 - **The provider that answered** is shown in "How this answer was made", marked "fallback" after a failover.
 - **Measured on the six demo questions:**
   - With both providers healthy: 6/6, all answered by Groq in 5.7–9.1 s.
-  - With every Groq request forced to a simulated 429: 6/6, all answered by Cloudflare in 11.4–22.8 s.
+  - With every Groq request forced to a simulated 429 asking for a 30 s wait: 6/6. Each question made one Groq
+    request and was answered by Cloudflare in 12.9–22.4 s, with no time spent waiting on Groq.
 - **The review's editor reply is now read tolerantly.** An unreadable reply becomes a safe verdict that removes
   nothing, which fixes the Cloudflare failures (E08 and two gpt-oss-20b demo questions).
 - **Demo-mode limits** (Docker image defaults):
@@ -312,7 +315,7 @@ the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` thr
   [evaluation/V2_HOSTED_PROVIDERS.md](evaluation/V2_HOSTED_PROVIDERS.md).
 
 ### Tests and CI
-- **809 tests:** the capstone's **664 are unchanged**, plus 145 v2 tests. They run offline with outbound network
+- **810 tests:** the capstone's **664 are unchanged**, plus 146 v2 tests. They run offline with outbound network
   blocked.
   - The 5 PostgreSQL tests run only with `TEST_DATABASE_URL`, and in CI against a service container.
   - `tests_live/` (4 smoke tests against a real Ollama) runs only with `LIVE_LLM=1`.

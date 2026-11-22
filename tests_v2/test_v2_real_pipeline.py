@@ -626,3 +626,26 @@ def test_an_unreadable_editor_reply_never_crashes_or_removes_verified_quotes(ass
         assert a.last_review.editor_verdict.reason == EDITOR_UNREADABLE
     else:
         assert a.last_review.editor_verdict.final_answer == "ok"  # recorded only; never used for the reply
+
+
+def test_a_429_with_retry_after_fails_over_at_once_and_the_fallback_keeps_its_retries(
+        collections, real_provider, monkeypatch):
+    """Owner decision: a visitor never waits on the primary's backoff. Its 429 asks for 30 s; neither the SDK nor
+    CrewAI may retry or wait on the primary. The fallback keeps its retries (here one 429, then an answer)."""
+    import time
+
+    from app.pipeline import RequestTrace
+
+    monkeypatch.setenv("LLM_MAX_RETRIES", "1")  # shared setting: the fallback may retry once; the primary never
+    wait_30s = status(429, **{"retry-after": "30"})
+    fallback = CrewFake(retrieval=[RATE_LIMITED, None])  # its first answer is a 429, then it answers normally
+    a, router = failover_assistant(collections, real_provider, monkeypatch,
+                                   CrewFake(**{role: wait_30s for role in ALL_ROLES}), fallback)
+    trace = RequestTrace()
+    start = time.perf_counter()
+    r = a.ask(f"s-{uuid.uuid4().hex[:8]}", SHOES, trace)
+    elapsed = time.perf_counter() - start
+    assert r.status == "answered" and trace.failover and trace.settings.base_url == FALLBACK_URL
+    assert router.hosts.count("llm.test") == 1  # one primary request: no retry, so no Retry-After wait
+    assert elapsed < 20  # honouring the 30 s Retry-After even once would take longer
+    assert fallback.roles[:2] == ["retrieval", "retrieval"]  # the fallback's 429 was retried, then answered
