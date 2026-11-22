@@ -10,7 +10,9 @@ WORKDIR /app
 COPY requirements.lock.linux.txt .
 # The cache mount stays out of the image; it only spares re-downloads on rebuilds (and survives flaky networks).
 RUN --mount=type=cache,target=/root/.cache/pip pip install --retries 10 -r requirements.lock.linux.txt
-COPY app app
+# Only what the download imports, so code changes elsewhere in app/ don't invalidate the cached model layer.
+COPY app/core/config.py app/core/
+COPY app/rag/embeddings.py app/rag/
 COPY scripts/download_model.py scripts/
 # The only build step that needs the internet; the revision is pinned in the script.
 RUN python scripts/download_model.py
