@@ -198,12 +198,23 @@ The mock always behaved. Real models found these gaps, and each one is now handl
 - **Failures that multiplied.** CrewAI's agent retries tripled every timeout, so they are off on the real path, and
   Ollama gets no transport retries. Schema parsing moved from inside the agent to a server-side JSON schema plus a
   guardrail with one retry. Every failure ends in the polite reply.
-- **The review editor's retyped text.** On the 15-query evaluation, qwen3:4b, acting as the AutoGen Final Editor,
-  returned a cut-off copy of the draft marked "approved", or rewrote it. Because a review may only remove claims,
-  correct grounded answers were lost. Now, for real models, code reads the Reviewer's `UNSUPPORTED: <sentence>`
-  lines and removes exactly those sentences from the **original** draft; the editor's text is never used. It is
-  still remove-only. Unparseable or unmatched reviewer output removes all policy text (fail-safe). The mock is
-  unchanged.
+- **The review editor's retyped text, and the reviewer's judgement.** On the 15-query evaluation, qwen3:4b, acting
+  as the AutoGen Final Editor, returned a cut-off copy of the draft marked "approved", or rewrote it. Because a review
+  may only remove claims, correct grounded answers were lost. Later, the Reviewer flagged sentences quoted word for
+  word from the policies. For real models (the mock is unchanged):
+  - **Code removes only the flagged sentences.** Code reads the Reviewer's `UNSUPPORTED: <sentence>` lines and
+    removes those sentences from the **original** draft. The editor's text is never used.
+  - **Verbatim sentences are kept.** A flag on a sentence that appears word for word in the retrieved policy text is
+    overruled, because the sentence is supported by definition. Flags on reworded sentences still remove them.
+  - **Exact quotes only.** The policy part of every answer is exact, code-verified quotes from the retrieved
+    policies. The model only selects which sentences answer the question, never words them itself. (qwen3:4b's
+    rewording of KB-08 had dropped "within 30 minutes".)
+  - **Fail-safe:** unreadable reviewer output removes all policy text.
+
+  **A deliberate design choice:** on real models, every policy sentence is now an exact quote, so the reviewer can no
+  longer change the policy text. The AutoGen review still runs as specified, and its verdict and flags are recorded.
+  Grounding is enforced by the code-verified quotes and the groundedness guardrail, both deterministic. A 4B model's
+  judgement can't remove a sentence that is literally in the policy.
 - **Provider error text in logs.** Error bodies are redacted at log-record creation, for every logger.
 - **Concurrency.** Each request's evidence is kept in a per-request `RequestTrace`, never in shared state, and the
   first history write of a session is an atomic upsert.
@@ -212,29 +223,40 @@ The mock always behaved. Real models found these gaps, and each one is now handl
 **The 15-query evaluation**, from [evaluation/V2_PROVIDER_COMPARISON.md](evaluation/V2_PROVIDER_COMPARISON.md):
 - The same queries, judge and rubrics as the graded evaluation. The judge is a deterministic rubric scorer, 1–5.
 - One measured request per query.
-- In the qwen3:4b run, every request started at ≤ 52 °C, and all 15 measured requests had 0 ms of thermal slowdown.
-- The mock run reproduces the committed graded r2 results exactly.
+- In the latest qwen3:4b run, each request started at ≤ 65 °C, and any request with thermal or power throttling was
+  re-run, up to 4 attempts.
+- The start temperature and throttle time of every recorded request are in the report.
+- The mock reproduces the committed graded r2 results exactly.
 
-| Provider | Accuracy | Grounding | Completeness | Safety | Statuses | Latency s, median / max | GPU °C at start |
-|---|---|---|---|---|---|---|---|
-| mock | 4.73 (v3: 5.00) | 5.00 | 5.00 | 5.00 | 13 answered, 1 fallback, 1 blocked | 0.25 / 0.36 | n/a (CPU) |
-| **qwen3:4b** (Ollama, RTX 4050 Laptop) | **4.60** | 5.00 | **4.73** | 5.00 | 12 answered, 2 fallback, 1 blocked | **9.06 / 13.51** | 51–52 |
-| qwen3:4b before the two fixes below | 4.33 | 5.00 | 4.47 | 5.00 | 11 answered, 2 fallback, 1 needs ID, 1 blocked | 15.79 / 18.97 | 51–65 |
+| Provider / version | Accuracy | Grounding | Completeness | Safety | Statuses | Latency s, median / max |
+|---|---|---|---|---|---|---|
+| mock | 4.73 (v3: 5.00) | 5.00 | 5.00 | 5.00 | 13 answered, 1 fallback, 1 blocked | 0.27 / 0.37 (CPU) |
+| **qwen3:4b, current** (B+ and C: exact quotes) | **4.60** | 5.00 | **5.00** | 5.00 | **13 answered, 1 fallback, 1 blocked** | **8.28 / 12.42** |
+| qwen3:4b, option B only | 4.60 | 5.00 | 4.73 | 5.00 | 12 answered, 2 fallback, 1 blocked | 9.06 / 13.51 |
+| qwen3:4b, before the fixes | 4.33 | 5.00 | 4.47 | 5.00 | 11 answered, 2 fallback, 1 needs ID, 1 blocked | 15.79 / 18.97 |
 
-The two fixes:
-- **Review:** code now removes only the sentences the Reviewer flags, so E07 is answered again.
-- **Latency:** the default Ollama URL is now `127.0.0.1` instead of `localhost`. On Windows each new connection to
-  `localhost` waited ~2.2 s for IPv6 first, and CrewAI opens three per request. That fix alone took the median from
-  15.8 s to 9.1 s.
+**The fixes, in order:**
+1. **Ollama URL:** `127.0.0.1` instead of `localhost`. Each new Windows connection to `localhost` waited ~2.2 s for
+   IPv6 first, and CrewAI opens three per request.
+2. **Review (option B):** the editor's retyped text is no longer used, so E07 is answered.
+3. **Exact quotes (B+ and C):** E08 is now answered with the exact KB-08 sentence, including "within 30 minutes".
 
-The model was never the bottleneck: it ran 100% on the GPU, with no other model loaded and power well under its
-limit.
+The current qwen3:4b statuses match the mock's on every query.
 
-Two queries still differ from the mock:
-- **E08:** the reviewer correctly flagged the generator's own rewording of KB-08, so the reply is the safe refusal.
-- **E12:** the generator chose one of two expected sentences.
+The remaining accuracy gaps are judge artefacts or quote selection, not wrong answers:
+- **E08:** the frozen rubrics expect the literal "3 times" or "3 retries", while the reply quotes KB-08's "3 more
+  times within 30 minutes" sentence.
+- **E12:** the model selected one of two expected KB-12 sentences.
 
-Grounding and safety stay at 5.00: nothing unsupported or unsafe reached a reply.
+**Throttling:** with Cooler Boost on, most requests heated the GPU from about 55 °C to 85–87 °C and hit brief thermal
+slowdown, so they were re-run. E10, E12 and D4 still throttled (119–838 ms) after 4 attempts, and are reported with
+that throttle time.
+
+**The chat UI's six demo questions** are now part of every measured run.
+- qwen3:4b passes 5 of 6. In D4 (ORD-1029 multi-part), the model selected only the KB-01 return sentence, so the
+  expected KB-12 citation is missing. The escalation part is still answered by the order facts, and the policy part
+  is no longer lost.
+- The mock also passes 5 of 6: its extractive generator answers only D4's return part.
 
 **The Stage B model comparison**, on 6 demo questions × 2 rounds, against `127.0.0.1`
 ([evaluation/v2/](evaluation/v2/)). GPU temperature was not recorded in this run.
@@ -246,7 +268,7 @@ Grounding and safety stay at 5.00: nothing unsupported or unsafe reached a reply
 | qwen2.5:7b-instruct | 8/12 | 6/12 | 3 | 18.67 / 23.99 | 82 % (spills to CPU) |
 
 ### Tests and CI
-- **788 tests:** the capstone's **664 are unchanged**, plus 124 v2 tests. They run offline with outbound network
+- **792 tests:** the capstone's **664 are unchanged**, plus 128 v2 tests. They run offline with outbound network
   blocked.
   - The 5 PostgreSQL tests run only with `TEST_DATABASE_URL`, and in CI against a service container.
   - `tests_live/` (4 smoke tests against a real Ollama) runs only with `LIVE_LLM=1`.
@@ -259,13 +281,13 @@ Grounding and safety stay at 5.00: nothing unsupported or unsafe reached a reply
 - Screenshots at 360, 768 and 1440 px in both themes: [docs/screenshots/](docs/screenshots/).
 - **Rate limits are kept in memory**, so they are per process and reset on restart. A multi-instance deploy would
   need a shared store.
-- **Latency is about 9 s per answer (median; 13.5 s max) on a laptop GPU**, and higher when it throttles: a request
-  heats this GPU by ~25–30 °C. See the measured table above. Use `127.0.0.1`, not `localhost`, for Ollama on Windows: a new
+- **Latency is about 8 s per answer (median; 12.4 s max) on a laptop GPU.** A request heats this GPU by ~25–30 °C,
+  often into brief thermal slowdown, so latency varies. See the measured table above.
+- **Retrieval has rare unexplained variations.** One mock evaluation run quoted a different E07 passage. It was not
+  reproduced in 6 retries; Chroma is suspected. Use `127.0.0.1`, not `localhost`, for Ollama on Windows: a new
   connection to `localhost` waits ~2.2 s for IPv6 first, which once doubled latency.
-- **The small reviewer over-flags on some questions.** On the multi-part demo question, qwen3:4b's Reviewer marks
-  sentences quoted word for word from the policies as `UNSUPPORTED`. The answer then keeps only its order part:
-  safe, but incomplete. A deterministic guard is proposed and awaits a decision. The screenshots predate the review
-  and latency changes.
+- **The mock answers only part of the multi-part demo question.** The graded mock's extractive generator cites KB-01
+  but not KB-12, so the demo check reports it. The mock is kept exactly as graded.
 - **One capstone test can fail when another process uses the same Chroma folder:**
   `tests/test_cache.py::test_11_add_document_clears_the_cache`.
   - It failed in 2 of 5 full runs that overlapped with a measurement script using `chroma_db/` and the GPU, and

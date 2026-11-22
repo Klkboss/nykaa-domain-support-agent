@@ -17,27 +17,34 @@ The "before fixes" row is the first qwen3:4b run, which had two problems; both a
   never the bottleneck: 100% on GPU, no other model loaded, power draw 28–53 W against a 92–105 W limit, P0 clocks,
   and 57–62 tokens/s generation.
 
-The current run, after both fixes, still differs from the mock on two queries:
+**After options B+ and C, the current run:**
 
-- **E08 (UPI retries):** the review worked as designed. The grounded generator accepted the model's own sentence
-  ("You can retry the payment up to 3 more times after the first failed attempt."). It passes the lexical grounding
-  check, but it drops KB-08's "within 30 minutes" condition. The Reviewer flagged it as `UNSUPPORTED`, code removed
-  it, nothing was left, and the reply is the safe refusal. Using only verified quotes, never the model's wording,
-  would avoid this; that option was not chosen.
-- **E12 (escalation):** the generator chose one of the two expected KB-12 sentences (accuracy 3).
+- **What changed.** A flag on a sentence that appears word for word in the retrieved policy text is overruled, and
+  the policy part of every answer is exact, code-verified quotes: the model only selects which sentences answer the
+  question. On real models the reviewer can therefore no longer change policy text. The owner accepted this as a
+  deliberate design choice.
+- **E08 (UPI retries) is answered with the exact KB-08 sentence**, including "within 30 minutes". Rubric v1 still
+  scores its accuracy 1, like the mock's, because the literal expected fact is "3 times". Rubric v3 also gives 1,
+  because it counts the retry fact as "3 retries". The mock's reply happens to include KB-08's *other* sentence ("Once
+  all 3 retries have also failed…"); qwen3:4b selected only the "3 more times within 30 minutes" sentence. Both
+  rubrics are frozen, so this is a scoring limit, not a wrong answer.
+- **E12 (escalation):** the model selected one of the two expected KB-12 sentences (accuracy 3).
+- **Demo D4 (ORD-1029 multi-part) fails its KB-12 check.**
+  - The model selected only the KB-01 return sentence.
+  - The escalation part is still answered, by the order facts ("…flagged for escalation").
+  - The policy part is no longer lost, which was the regression this check was added for.
+  - The expectation was set before this run and is not changed after seeing the result.
 
-**Thermal control in the current run:** every request started at ≤ 52 °C, and every one of the 15 measured requests
-had 0 ms of thermal slowdown on its first attempt. One request heats this GPU by about 25–30 °C. In an earlier
-attempt that started requests at ≤ 60 °C, most requests reached 86–88 °C and throttled, so that attempt was
-discarded.
+**Thermal rule in this run (owner rule):**
+- Each request starts at ≤ 65 °C, and a request is discarded and re-run only if NVIDIA's thermal or power-cap counters
+  grew during it, up to 4 attempts.
+- With Cooler Boost on and background apps closed, requests started at 52–57 °C, but most reached 85–87 °C and had
+  10–1,000 ms of thermal slowdown on their first attempt, so they were re-run.
+- **E10, E12 and D4 were still throttled after 4 attempts.** They are recorded with their throttle time: 838, 119 and
+  401 ms. Power-cap slowdown was 0 ms throughout.
 
-**Found after this run, outside the 15 queries:** on the chat UI's multi-part demo question ("My order ORD-1029
-arrived late. Can I still return the shoes, and is my case being escalated?"), qwen3:4b's Reviewer **over-flags**.
-- It marked both draft sentences `UNSUPPORTED`, although both appear word for word in the retrieved KB-01 and KB-12
-  context.
-- It also listed four fragments of the context itself as `UNSUPPORTED`.
-- Option B trusts those flags, so the reply keeps only the order facts. That is safe, but the correct policy part is
-  lost.
-
-This is deterministic: two runs at temperature 0 gave the same result. A deterministic guard (ignore a flag on a
-sentence that appears verbatim in the retrieved context) is proposed, and awaits the owner's decision.
+**A one-off mock retrieval difference:** one mock run in this session (committed in `67490d9`, since replaced) gave E07
+a different retrieved passage. It quoted the fragment "100 points must be redeemed…" instead of "Each point is worth
+₹1 at checkout, a minimum of 100 points…", so it did not match the graded r2. Nothing else was running at the time. It
+did not recur in 3 full mock re-runs or 3 single E07 runs, all identical to r2. The cause is not identified; Chroma
+retrieval is suspected, like the intermittent `test_11` failure.
