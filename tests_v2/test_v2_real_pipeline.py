@@ -315,24 +315,76 @@ def test_e07_an_editor_cut_off_copy_marked_approved_no_longer_removes_correct_cl
     assert a.last_review.verdict.approved and a.last_review.flagged == ()
 
 
-def test_e08_an_editor_rewrite_no_longer_removes_correct_claims(assistant, collections):
+def test_an_editor_rewrite_no_longer_removes_correct_claims(assistant, collections):
     rewrite = "If the first payment attempt fails, the customer can retry the payment up to 3 more times."
-    a, (s1, s2) = two_claim_assistant(assistant, collections, editor=editor_says(False, rewrite))  # measured E08
+    a, (s1, s2) = two_claim_assistant(assistant, collections, editor=editor_says(False, rewrite))
     r = ask(a, SHOES)
     assert r.status == "answered" and s1 in r.reply and s2 in r.reply and "retry" not in r.reply
 
 
-def test_only_the_sentence_the_reviewer_flags_is_removed_whatever_the_editor_says(assistant, collections):
-    s1, s2 = two_shoe_sentences(collections)
-    flag = completion(f"UNSUPPORTED: {s2.lower().rstrip('.')}")  # case and the final full stop do not matter
-    a, _ = two_claim_assistant(assistant, collections, reviewer=flag, editor=editor_says(True, f"{s1} {s2}"))
+ORD_1029 = "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?"
+
+
+def test_ord_1029_multi_part_keeps_verbatim_sentences_despite_reviewer_flags(assistant, collections):
+    """Measured on qwen3:4b: the reviewer flagged both draft sentences (word for word in the policy text) and four
+    fragments of the context itself. Option B+ keeps both sentences; the order facts come from the tool."""
+    from app.guardrails.groundedness import evidence_by_doc
+
+    chunks = [c for c in search(collections[RECOMMENDED_STRATEGY], ORD_1029) if c.similarity >= 0.33]
+    evidence = evidence_by_doc(chunks)
+    picks = [next(s for p in evidence[d] for s in split_sentences(p) if s[0].isupper() and s.endswith("."))
+             for d in ("KB-01", "KB-12")]
+    fragment = next(s for p in evidence["KB-01"] for s in split_sentences(p) if s not in picks)
+    flags = "\n".join(f"UNSUPPORTED: {s}" for s in [*picks, fragment])  # draft sentences AND a context fragment
+    a, _, _ = assistant(generator=completion(json.dumps({"quotes": picks})), reviewer=completion(flags))
+    r = ask(a, ORD_1029)
+    assert r.status == "answered" and all(p in r.reply for p in picks)
+    assert r.reply.splitlines()[-1].startswith("Order information (ORD-1029): status")
+    assert set(a.last_review.overruled) == set(picks) and a.last_review.flagged == () and a.last_review.verdict.approved
+
+
+def test_a_flag_on_a_reworded_sentence_still_removes_it():
+    from types import SimpleNamespace
+
+    from app.review.autogen_review import REVIEWER_NAME, _code_verdict
+
+    context = "Footwear can be returned within 30 days of delivery if it is unworn. Refunds take 5 to 7 business days."
+    verbatim, reworded = "Footwear can be returned within 30 days of delivery if it is unworn.", "Refunds are instant."
+    flags = SimpleNamespace(source=REVIEWER_NAME, content=f"UNSUPPORTED: {verbatim}\nUNSUPPORTED: {reworded}")
+    verdict, result = _code_verdict(f"{verbatim} {reworded}", context, [flags])
+    assert verdict.final_answer == verbatim and not verdict.approved  # remove-only: the reworded one is gone
+    assert result.removed == {reworded} and result.overruled == {verbatim}
+
+
+def test_e08_is_answered_with_the_exact_kb08_sentence_never_the_models_rewording(assistant, collections):
+    """Measured on qwen3:4b (E08): the model reworded KB-08 and dropped "within 30 minutes"; the reviewer rightly
+    flagged the rewording and the reply became a refusal. Option C: only exact verified quotes are used."""
+    from app.rag.documents import load_knowledge_base
+
+    q = "My UPI payment failed twice. How many times can I retry?"
+    kb08 = next(d for d in load_knowledge_base() if d.doc_id == "KB-08")
+    exact = next(s for s in split_sentences(kb08.text) if "within 30 minutes" in s)
+    reworded = "You can retry the payment up to 3 more times after the first failed attempt."
+    generator = completion(json.dumps({"quotes": [exact], "answer": reworded}))  # an extra 'answer' is ignored
+    a, _, gens = assistant(generator=generator, reviewer=completion(f"UNSUPPORTED: {exact}"))
+    r = ask(a, q)
+    assert r.status == "answered" and exact in r.reply and "within 30 minutes" in r.reply
+    assert reworded not in r.reply and gens[0].outcomes == ["quotes"]
+
+
+def test_the_composers_own_policy_wording_is_replaced_by_the_tools_exact_quotes(assistant, collections):
+    s1, _ = two_shoe_sentences(collections)
+    reworded = {"policy_claims": [{"text": "Shoes may be sent back for a month.", "source_doc_ids": ["KB-01"]}],
+                "policy_error": None, "order": None, "order_error": None, "needs_order_id": False}
+    a, _, _ = assistant(generator=completion(json.dumps({"quotes": [s1]})),
+                        composer=completion(json.dumps(reworded)))
     r = ask(a, SHOES)
-    assert r.status == "answered" and s1 in r.reply and s2 not in r.reply  # removed although the editor approved
-    assert a.last_review.flagged == (s2,) and not a.last_review.verdict.approved
+    assert r.status == "answered" and s1 in r.reply and "a month" not in r.reply
+    assert "policy_from_tool" in a.last_crew_run.draft_repairs
 
 
 @pytest.mark.parametrize("reviewer_text", [
-    "UNSUPPORTED: Customers get a free gift voucher with every return.",  # flags a sentence that is not in the draft
+    "UNSUPPORTED: Customers get a free gift voucher with every return.",  # neither in the draft nor the context
     "The second sentence looks doubtful to me.",  # neither flags nor ALL CLAIMS SUPPORTED
 ])
 def test_reviewer_output_that_cannot_be_matched_removes_all_policy_text(assistant, collections, reviewer_text):
@@ -342,15 +394,22 @@ def test_reviewer_output_that_cannot_be_matched_removes_all_policy_text(assistan
 
 
 def test_flag_matching_rules():
-    from app.review.autogen_review import flagged_sentences
+    from app.review.autogen_review import review_flags
 
     draft = "Footwear can be returned within 30 days. Refunds take 7 days."
-    assert flagged_sentences("ALL CLAIMS SUPPORTED", draft) == (set(), True)
-    assert flagged_sentences('- UNSUPPORTED: "refunds take 7 days"', draft) == ({"Refunds take 7 days."}, True)
-    assert flagged_sentences("UNSUPPORTED: can be returned within 30 days", draft) == (
-        {"Footwear can be returned within 30 days."}, True)  # a quoted part of a sentence (>= 20 characters)
-    assert flagged_sentences("UNSUPPORTED: 30 days", draft) == (set(), False)  # too short to locate: fail-safe
-    assert flagged_sentences("", draft) == (set(), False)
+    context = "Footwear can be returned within 30 days. Gift cards stay valid for 12 months."
+
+    def check(text: str) -> tuple[set[str], set[str], bool]:
+        f = review_flags(text, draft, context)
+        return set(f.removed), set(f.overruled), f.readable
+
+    assert check("ALL CLAIMS SUPPORTED") == (set(), set(), True)
+    assert check('- UNSUPPORTED: "refunds take 7 days"') == ({"Refunds take 7 days."}, set(), True)
+    assert check("UNSUPPORTED: can be returned within 30 days") == (  # part of a sentence, verbatim in the context
+        set(), {"Footwear can be returned within 30 days."}, True)
+    assert check("UNSUPPORTED: Gift cards stay valid for 12 months.") == (set(), set(), True)  # the context itself
+    assert check("UNSUPPORTED: Delivery is always free.") == (set(), set(), False)  # matches nothing: fail-safe
+    assert check("") == (set(), set(), False)
 
 
 def test_provider_error_text_never_reaches_the_console(assistant, capfd, caplog):
@@ -394,7 +453,7 @@ def test_unverifiable_generation_falls_back_to_the_extractive_answer(assistant, 
     assert len(cache) == 0 and cache.stats["skipped"] == 1  # a fallback is never cached
 
 
-def test_the_model_answer_is_used_only_when_the_guardrail_supports_it(collections, real_provider):
+def test_the_answer_is_always_the_verified_quotes_never_the_models_wording(collections, real_provider):
     chunks = [c for c in search(collections[RECOMMENDED_STRATEGY], SHOES) if c.similarity >= 0.33]
     quote = split_sentences(MockGroundedGenerator().generate(SHOES, chunks))[0]
     invented = "You also get a free gift voucher with every return."
@@ -403,8 +462,8 @@ def test_the_model_answer_is_used_only_when_the_guardrail_supports_it(collection
         fake = CrewFake(generator=completion(json.dumps({"quotes": [f"  {quote} "], "answer": answer})))
         gen = LLMGroundedGenerator(load_llm_settings(), http_client=fake.sync_client())
         results[answer] = (gen.generate(SHOES, chunks), gen.outcomes)
-    assert results[quote] == (quote, ["answer"])
-    assert results[invented] == (quote, ["quotes"])  # unsupported answer dropped; the verified quote is kept
+    # Option C: the model's own wording is never used, even when supported; the verified exact quote always is.
+    assert results[quote] == results[invented] == (quote, ["quotes"])
 
 
 def test_an_answer_blending_two_documents_is_replaced_by_the_separate_quotes(collections, real_provider):

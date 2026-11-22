@@ -85,7 +85,8 @@ def draft_guardrail(context_tasks: list[Task]):  # type: ignore[no-untyped-def]
 
 
 def apply_intent_rules(draft: SupportDraft, question: str, ids_given: set[str], notes: list[str],
-                       order_output: dict[str, Any] | None = None) -> SupportDraft:
+                       order_output: dict[str, Any] | None = None,
+                       rag_output: dict[str, Any] | None = None) -> SupportDraft:
     """Real models: the capstone mock Composer's deterministic rules, applied to the model's validated draft. They
     never invent anything: order fields are copied from the order tool's own output, and otherwise content is only
     removed or the fixed "please share your order ID" line is set. The groundedness guardrail still checks the
@@ -95,6 +96,8 @@ def apply_intent_rules(draft: SupportDraft, question: str, ids_given: set[str], 
          (measured: qwen3:4b left `order` empty although the tool returned the facts). No lookup -> no order fields.
       3. A pure order question (order part answered, no policy cue in the question) gets no policy text.
       4. Each policy claim is split into sentences, so two sentences a model merged are verified separately.
+      5. Owner decision (option C): when the rag tool's output is given, the policy part is COPIED FROM IT: its
+         verified exact quotes with their per-sentence citations (or its error), never the Composer's wording.
     """
     update: dict[str, Any] = {}
     needs_id = bool(ORDER_INTENT_RE.search(question)) and not ids_given
@@ -111,6 +114,14 @@ def apply_intent_rules(draft: SupportDraft, question: str, ids_given: set[str], 
     if (model_order, draft.order_error) != (order, order_error):
         notes.append("order_from_tool")
     update.update(order=order, order_error=order_error)
+    if rag_output is not None:  # rule 5
+        claims = [PolicyClaim(text=c["text"], source_doc_ids=c["source_doc_ids"][:5])
+                  for c in rag_output.get("claims", []) if c.get("source_doc_ids")] if rag_output.get("grounded") else []
+        policy_error = rag_output.get("error")
+        if ([c.model_dump() for c in claims], policy_error) != (
+                [c.model_dump() for c in draft.policy_claims], draft.policy_error):
+            notes.append("policy_from_tool")
+        draft = draft.model_copy(update={"policy_claims": claims, "policy_error": policy_error})
     order_answered = needs_id or order is not None or order_error is not None
     if order_answered and not POLICY_CUE_RE.search(question) and (draft.policy_claims or draft.policy_error):
         notes.append("pure_order_question")
@@ -255,7 +266,8 @@ def run_support_crew(
     if support.real:  # the guardrail already validated it; a failure here means CrewAI changed, and fails safe
         structured = apply_intent_rules(SupportDraft.model_validate_json(out.raw), question,
                                         support.order_tool.allowed_ids or set(), support.draft_repairs,
-                                        (support.order_tool.outputs or [None])[-1])
+                                        (support.order_tool.outputs or [None])[-1],
+                                        (support.rag_tool.outputs or [None])[-1])
     return CrewRun(
         question=question,
         raw=out.raw,

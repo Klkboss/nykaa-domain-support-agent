@@ -1,12 +1,11 @@
 """Grounded generation with a real model: the model QUOTES retrieved sentences, code verifies every quote.
 
-The model gets the retrieved policy sentences and must return JSON {"quotes": [...], "answer": "..."}.
+The model gets the retrieved policy sentences and must return JSON {"quotes": [...]}: it SELECTS the sentences that
+answer the question, and code verifies each is exact.
   - Every quote must equal one retrieved sentence (whitespace-insensitive); it is replaced by that exact sentence.
-  - The model's short `answer` is used only if every sentence of it is supported by ONE retrieved document (the
-    exact per-document rule the citations and the groundedness guardrail apply downstream); otherwise the verified
-    quotes are the answer, each its own sentence, so a multi-part question keeps one verified quote per part.
-    (Measured on qwen3:4b: an answer blending a KB-01 and a KB-12 fact passed a pooled-evidence check, got no
-    citation downstream and the whole reply fell back.)
+  - Owner decision (option C): the answer is ALWAYS the verified quotes, each its own sentence, never the model's
+    own wording. (Measured on qwen3:4b: a reworded answer dropped KB-08's "within 30 minutes" condition, and an
+    earlier one blended a KB-01 and a KB-12 fact.) A multi-part question keeps one verified quote per part.
   - Anything else (invalid JSON, a quote not in the context, no quotes, a provider error) falls back to the
     capstone's extractive answer from the same chunks, so the text is still retrieved policy text, never invented.
 BudgetExceeded is never caught. Fallback text is marked not cacheable, so a transient failure is not stored.
@@ -22,7 +21,6 @@ from openai import OpenAI
 from pydantic import BaseModel, Field, ValidationError
 
 from app.governance.budget import BudgetExceeded, RequestBudget
-from app.guardrails.groundedness import attribute_claims, evidence_by_doc
 from app.llm.errors import classify
 from app.llm.metering import metered, reported_or_estimated
 from app.llm.settings import LLMSettings
@@ -31,20 +29,18 @@ from app.rag.evaluation import dedupe
 from app.rag.generation import MockGroundedGenerator, _is_complete, contiguous_passages
 from app.rag.retrieval import RetrievedChunk
 
-# The JSON answer is two quoted sentences plus a one-sentence answer: well under 400 tokens.
+# The JSON answer is at most a few quoted sentences: well under 400 tokens.
 GENERATION_MAX_TOKENS = 400
 SYSTEM_PROMPT = (
     "You answer customer questions about Nykaa policies using ONLY the numbered policy sentences you are given. "
-    "Return JSON with two fields: \"quotes\": the 1 to 3 sentences that answer the question, each copied exactly, "
-    "word for word, as a separate list item (never join two sentences); if the question has several parts, quote "
-    "one sentence for each part; \"answer\": a one-sentence answer that uses only facts from those quotes. "
-    "Never add facts that are not in the quotes."
+    "Return JSON with one field, \"quotes\": the 1 to 3 sentences that answer the question, each copied exactly, "
+    "word for word, as a separate list item (never join, shorten or reword a sentence); if the question has several "
+    "parts, quote one sentence for each part."
 )
 
 
 class GeneratedAnswer(BaseModel):
-    quotes: list[str] = Field(min_length=1, max_length=4)
-    answer: str = ""
+    quotes: list[str] = Field(min_length=1, max_length=4)  # any other field a model adds is ignored
 
 
 RESPONSE_FORMAT: dict[str, Any] = {
@@ -69,7 +65,7 @@ class LLMGroundedGenerator(MockGroundedGenerator):
         super().__init__(max_sentences, margin)
         self.settings = settings
         self.budget: RequestBudget | None = None  # set per request by RagLookupTool
-        self.outcomes: list[str] = []  # per call: answer | quotes | fallback:<reason> (measurement evidence)
+        self.outcomes: list[str] = []  # per call: quotes | fallback:<reason> (measurement evidence)
         self.last_cacheable = True
         self._client = OpenAI(base_url=settings.base_url, api_key=settings.api_key.get_secret_value(),
                               timeout=settings.timeout_s, max_retries=settings.max_retries, http_client=http_client)
@@ -121,8 +117,4 @@ class LLMGroundedGenerator(MockGroundedGenerator):
         if any(q is None for q in quotes):
             raise GenerationRejected("quote_not_in_context")
         verified = dedupe([q for q in quotes if q])[: self.max_sentences]
-        answer = parsed.answer.strip()
-        cited = attribute_claims(split_sentences(answer), evidence_by_doc(chunks)) if answer else []
-        if cited and all(c["source_doc_ids"] for c in cited):
-            return answer, "answer"
         return " ".join(verified), "quotes"

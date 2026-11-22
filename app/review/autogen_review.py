@@ -18,7 +18,10 @@ v2, real provider, owner decision (Stage G, option B): the Final-Editor's retype
 qwen3:4b, the editor returned a cut-off copy marked approved (E07) or rewrote supported sentences (E08), and the
 remove-only rule then dropped correct content. Instead, code reads the Reviewer's 'UNSUPPORTED: <sentence>' lines
 and removes exactly those sentences from the ORIGINAL draft (still remove-only). If the reviewer's output cannot be
-parsed, or a flag matches no draft sentence, every policy sentence is removed (fail-safe, as before). The editor
+parsed, or a flag matches no draft sentence, every policy sentence is removed (fail-safe, as before).
+Option B+ (owner decision): a flag on a sentence that appears word for word in the retrieved policy text is overruled
+(supported by definition), and a flag quoting the context itself is ignored; flags on reworded sentences still
+remove them. The editor
 still runs (the spec's two-agent team); its own verdict is kept in ReviewResult.editor_verdict for transparency.
 The mock path is unchanged.
 """
@@ -80,6 +83,7 @@ class ReviewResult:
     discarded_additions: list[str]  # sentences the editor wrote that were not in the draft: never rendered
     editor_verdict: Verdict | None = None  # v2 real models: the editor's own verdict, never used for the reply
     flagged: tuple[str, ...] = ()  # v2 real models: the draft sentences the reviewer flagged (removed by code)
+    overruled: tuple[str, ...] = ()  # v2 real models: flagged but word for word in the policy text (kept, B+)
 
 
 def build_review_team(budget: RequestBudget | None = None,
@@ -158,39 +162,54 @@ def _norm(sentence: str) -> str:
     return " ".join(sentence.strip().strip("\"'`“”").split()).rstrip(".!?").casefold()
 
 
-def flagged_sentences(reviewer_text: str, draft: str) -> tuple[set[str], bool]:
-    """The draft sentences the reviewer flagged, and whether every flag could be matched. A flag matches the draft
-    sentence it copies (case, spacing, quotes and the final full stop ignored) or one it quotes part of (at least 20
-    characters). Output with neither flags nor 'ALL CLAIMS SUPPORTED' counts as unmatched (the caller then removes
-    everything)."""
+@dataclass(frozen=True)
+class ReviewFlags:
+    removed: frozenset[str]  # draft sentences flagged and NOT found word for word in the context: removed by code
+    overruled: frozenset[str]  # draft sentences flagged but found word for word in the context (option B+): kept
+    readable: bool  # False: the output had neither flags nor 'ALL CLAIMS SUPPORTED', or a flag matched nothing
+
+
+def review_flags(reviewer_text: str, draft: str, context: str) -> ReviewFlags:
+    """Read the reviewer's 'UNSUPPORTED: <sentence>' lines against the draft and the retrieved context.
+
+    A flag names the draft sentence it copies (case, spacing, quotes and the final full stop ignored) or one it
+    quotes part of (at least 20 characters). Owner decision (option B+): a sentence that appears word for word in the
+    retrieved policy text is supported by definition, so a flag on it is overruled; a flag quoting the context
+    itself, not the draft, is ignored. Any other flag that matches nothing makes the output unreadable.
+    """
     sentences = split_sentences(draft)
+    in_context = _norm(context)
     flags = [f for f in _FLAG_RE.findall(reviewer_text) if f.strip()]
     if not flags:
-        return set(), bool(_ALL_SUPPORTED_RE.search(reviewer_text))
+        return ReviewFlags(frozenset(), frozenset(), bool(_ALL_SUPPORTED_RE.search(reviewer_text)))
     flagged: set[str] = set()
-    all_matched = True
+    readable = True
     for flag in flags:
         hits = [s for s in sentences if _norm(s) == _norm(flag)]
         if not hits and len(_norm(flag)) >= 20:
             hits = [s for s in sentences if _norm(flag) in _norm(s)]
-        flagged.update(hits)
-        all_matched = all_matched and bool(hits)
-    return flagged, all_matched
+        if hits:
+            flagged.update(hits)
+        elif not (_norm(flag) and _norm(flag) in in_context):  # a flag on the context itself is not about the draft
+            readable = False
+    overruled = {s for s in flagged if _norm(s) in in_context}
+    return ReviewFlags(frozenset(flagged - overruled), frozenset(overruled), readable)
 
 
-def _code_verdict(text: str, messages: list) -> tuple[Verdict, tuple[str, ...]]:
-    """Option B: the verdict is computed in code from the reviewer's flags and the ORIGINAL draft."""
+def _code_verdict(text: str, context: str, messages: list) -> tuple[Verdict, ReviewFlags]:
+    """Options B and B+: the verdict is computed in code from the reviewer's flags and the ORIGINAL draft."""
     reviewer_text = "\n".join(str(m.content) for m in messages if getattr(m, "source", "") == REVIEWER_NAME)
-    flagged, all_matched = flagged_sentences(reviewer_text, text)
-    sentences = split_sentences(text)
-    if not all_matched:
+    flags = review_flags(reviewer_text, text, context)
+    if not flags.readable:
         reason = "The reviewer's output could not be matched to the draft, so all policy text was removed (fail-safe)."
-        return Verdict(approved=False, final_answer="", reason=reason), tuple(s for s in sentences if s in flagged)
-    if not flagged:
-        return Verdict(approved=True, final_answer=text, reason="The reviewer flagged no sentence."), ()
-    kept = " ".join(s for s in sentences if s not in flagged)
-    reason = f"Removed {len(flagged)} sentence(s) the reviewer flagged as unsupported."
-    return Verdict(approved=False, final_answer=kept, reason=reason), tuple(s for s in sentences if s in flagged)
+        return Verdict(approved=False, final_answer="", reason=reason), flags
+    if not flags.removed:
+        reason = "The reviewer flagged no sentence." if not flags.overruled else (
+            f"{len(flags.overruled)} flagged sentence(s) appear word for word in the policy text and were kept.")
+        return Verdict(approved=True, final_answer=text, reason=reason), flags
+    kept = " ".join(s for s in split_sentences(text) if s not in flags.removed)
+    reason = f"Removed {len(flags.removed)} sentence(s) the reviewer flagged as unsupported."
+    return Verdict(approved=False, final_answer=kept, reason=reason), flags
 
 
 def _review_with_real_model(text: str, context: str, budget: RequestBudget | None,
@@ -217,7 +236,9 @@ def _review_with_real_model(text: str, context: str, budget: RequestBudget | Non
     spent = (budget.used - before) if budget is not None else 0
     draft_sentences = set(split_sentences(text))
     added = [s for s in split_sentences(verdict.final_answer) if s not in draft_sentences]
-    code_verdict, flagged = _code_verdict(text, messages)  # option B: the editor's text is never used
+    code_verdict, flags = _code_verdict(text, context, messages)  # options B/B+: the editor's text is never used
     # reserved_tokens = spent: with a real model each call reserves for itself; nothing is held for the whole review
+    sentences = split_sentences(text)
     return ReviewResult(text, context, code_verdict, messages, spent, spent, added, editor_verdict=verdict,
-                        flagged=flagged)
+                        flagged=tuple(s for s in sentences if s in flags.removed),
+                        overruled=tuple(s for s in sentences if s in flags.overruled))
