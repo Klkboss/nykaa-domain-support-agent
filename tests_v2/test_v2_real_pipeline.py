@@ -283,6 +283,76 @@ def test_a_failing_reviewer_gives_the_polite_reply_not_an_unreviewed_answer(assi
     assert r.guardrails.rejected_claims == [f"review: {kind}"]
 
 
+# --- option B: code removes exactly the sentences the reviewer flags; the editor's retyped text is never used ------
+
+def two_shoe_sentences(collections) -> list[str]:
+    from app.guardrails.groundedness import evidence_by_doc
+
+    chunks = [c for c in search(collections[RECOMMENDED_STRATEGY], SHOES) if c.similarity >= 0.33]
+    passages = evidence_by_doc(chunks)["KB-01"]
+    sentences = [s for p in passages for s in split_sentences(p) if s[0].isupper() and s.endswith(".")]
+    assert len(sentences) >= 2
+    return sentences[:2]
+
+
+def two_claim_assistant(assistant, collections, **overrides):
+    s1, s2 = two_shoe_sentences(collections)
+    generator = completion(json.dumps({"quotes": [s1, s2], "answer": f"{s1} {s2}"}))
+    a, fake, _ = assistant(generator=generator, **overrides)
+    return a, (s1, s2)
+
+
+def editor_says(approved: bool, final_answer: str):
+    return completion(json.dumps({"approved": approved, "final_answer": final_answer, "reason": "x"}))
+
+
+def test_e07_an_editor_cut_off_copy_marked_approved_no_longer_removes_correct_claims(assistant, collections):
+    s1, s2 = two_shoe_sentences(collections)
+    a, _ = two_claim_assistant(assistant, collections, editor=editor_says(True, s1[:30]))  # measured E07
+    r = ask(a, SHOES)
+    assert r.status == "answered" and s1 in r.reply and s2 in r.reply
+    assert a.last_review.editor_verdict.final_answer == s1[:30]  # kept for transparency, never used
+    assert a.last_review.verdict.approved and a.last_review.flagged == ()
+
+
+def test_e08_an_editor_rewrite_no_longer_removes_correct_claims(assistant, collections):
+    rewrite = "If the first payment attempt fails, the customer can retry the payment up to 3 more times."
+    a, (s1, s2) = two_claim_assistant(assistant, collections, editor=editor_says(False, rewrite))  # measured E08
+    r = ask(a, SHOES)
+    assert r.status == "answered" and s1 in r.reply and s2 in r.reply and "retry" not in r.reply
+
+
+def test_only_the_sentence_the_reviewer_flags_is_removed_whatever_the_editor_says(assistant, collections):
+    s1, s2 = two_shoe_sentences(collections)
+    flag = completion(f"UNSUPPORTED: {s2.lower().rstrip('.')}")  # case and the final full stop do not matter
+    a, _ = two_claim_assistant(assistant, collections, reviewer=flag, editor=editor_says(True, f"{s1} {s2}"))
+    r = ask(a, SHOES)
+    assert r.status == "answered" and s1 in r.reply and s2 not in r.reply  # removed although the editor approved
+    assert a.last_review.flagged == (s2,) and not a.last_review.verdict.approved
+
+
+@pytest.mark.parametrize("reviewer_text", [
+    "UNSUPPORTED: Customers get a free gift voucher with every return.",  # flags a sentence that is not in the draft
+    "The second sentence looks doubtful to me.",  # neither flags nor ALL CLAIMS SUPPORTED
+])
+def test_reviewer_output_that_cannot_be_matched_removes_all_policy_text(assistant, collections, reviewer_text):
+    a, _ = two_claim_assistant(assistant, collections, reviewer=completion(reviewer_text))
+    r = ask(a, SHOES)
+    assert r.status == "fallback" and r.guardrails.refused  # fail-safe: nothing unreviewed reaches the customer
+
+
+def test_flag_matching_rules():
+    from app.review.autogen_review import flagged_sentences
+
+    draft = "Footwear can be returned within 30 days. Refunds take 7 days."
+    assert flagged_sentences("ALL CLAIMS SUPPORTED", draft) == (set(), True)
+    assert flagged_sentences('- UNSUPPORTED: "refunds take 7 days"', draft) == ({"Refunds take 7 days."}, True)
+    assert flagged_sentences("UNSUPPORTED: can be returned within 30 days", draft) == (
+        {"Footwear can be returned within 30 days."}, True)  # a quoted part of a sentence (>= 20 characters)
+    assert flagged_sentences("UNSUPPORTED: 30 days", draft) == (set(), False)  # too short to locate: fail-safe
+    assert flagged_sentences("", draft) == (set(), False)
+
+
 def test_provider_error_text_never_reaches_the_console(assistant, capfd, caplog):
     a, _, _ = assistant(composer=status(500))
     with caplog.at_level(logging.DEBUG):

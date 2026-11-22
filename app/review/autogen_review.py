@@ -13,11 +13,20 @@ v2, real provider: both agents use the metered OpenAI-compatible AutoGen client,
 keeps its own prompts). There is no up-front review reservation: each call reserves its own prompt estimate +
 max_tokens against the request budget and settles on the reported usage. A provider failure is re-raised as its
 typed LLMError (AutoGen itself only re-raises a RuntimeError string), so the pipeline can answer politely.
+
+v2, real provider, owner decision (Stage G, option B): the Final-Editor's retyped text is NEVER used. Measured on
+qwen3:4b, the editor returned a cut-off copy marked approved (E07) or rewrote supported sentences (E08), and the
+remove-only rule then dropped correct content. Instead, code reads the Reviewer's 'UNSUPPORTED: <sentence>' lines
+and removes exactly those sentences from the ORIGINAL draft (still remove-only). If the reviewer's output cannot be
+parsed, or a flag matches no draft sentence, every policy sentence is removed (fail-safe, as before). The editor
+still runs (the spec's two-agent team); its own verdict is kept in ReviewResult.editor_verdict for transparency.
+The mock path is unchanged.
 """
 
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import dataclass
 
 from pydantic import BaseModel
@@ -69,6 +78,8 @@ class ReviewResult:
     reserved_tokens: int
     spent_tokens: int  # metered reviewer + editor calls (<= reserved_tokens)
     discarded_additions: list[str]  # sentences the editor wrote that were not in the draft: never rendered
+    editor_verdict: Verdict | None = None  # v2 real models: the editor's own verdict, never used for the reply
+    flagged: tuple[str, ...] = ()  # v2 real models: the draft sentences the reviewer flagged (removed by code)
 
 
 def build_review_team(budget: RequestBudget | None = None,
@@ -139,6 +150,49 @@ def review_policy_draft(draft: SupportDraft, rag_output: dict | None,
     return ReviewResult(text, context, verdict, messages, reserved, meter.used, added)
 
 
+_FLAG_RE = re.compile(r"^\s*[-*]?\s*UNSUPPORTED\s*:\s*(.+?)\s*$", re.I | re.M)
+_ALL_SUPPORTED_RE = re.compile(r"\bALL CLAIMS SUPPORTED\b", re.I)
+
+
+def _norm(sentence: str) -> str:
+    return " ".join(sentence.strip().strip("\"'`“”").split()).rstrip(".!?").casefold()
+
+
+def flagged_sentences(reviewer_text: str, draft: str) -> tuple[set[str], bool]:
+    """The draft sentences the reviewer flagged, and whether every flag could be matched. A flag matches the draft
+    sentence it copies (case, spacing, quotes and the final full stop ignored) or one it quotes part of (at least 20
+    characters). Output with neither flags nor 'ALL CLAIMS SUPPORTED' counts as unmatched (the caller then removes
+    everything)."""
+    sentences = split_sentences(draft)
+    flags = [f for f in _FLAG_RE.findall(reviewer_text) if f.strip()]
+    if not flags:
+        return set(), bool(_ALL_SUPPORTED_RE.search(reviewer_text))
+    flagged: set[str] = set()
+    all_matched = True
+    for flag in flags:
+        hits = [s for s in sentences if _norm(s) == _norm(flag)]
+        if not hits and len(_norm(flag)) >= 20:
+            hits = [s for s in sentences if _norm(flag) in _norm(s)]
+        flagged.update(hits)
+        all_matched = all_matched and bool(hits)
+    return flagged, all_matched
+
+
+def _code_verdict(text: str, messages: list) -> tuple[Verdict, tuple[str, ...]]:
+    """Option B: the verdict is computed in code from the reviewer's flags and the ORIGINAL draft."""
+    reviewer_text = "\n".join(str(m.content) for m in messages if getattr(m, "source", "") == REVIEWER_NAME)
+    flagged, all_matched = flagged_sentences(reviewer_text, text)
+    sentences = split_sentences(text)
+    if not all_matched:
+        reason = "The reviewer's output could not be matched to the draft, so all policy text was removed (fail-safe)."
+        return Verdict(approved=False, final_answer="", reason=reason), tuple(s for s in sentences if s in flagged)
+    if not flagged:
+        return Verdict(approved=True, final_answer=text, reason="The reviewer flagged no sentence."), ()
+    kept = " ".join(s for s in sentences if s not in flagged)
+    reason = f"Removed {len(flagged)} sentence(s) the reviewer flagged as unsupported."
+    return Verdict(approved=False, final_answer=kept, reason=reason), tuple(s for s in sentences if s in flagged)
+
+
 def _review_with_real_model(text: str, context: str, budget: RequestBudget | None,
                             settings: LLMSettings) -> ReviewResult:
     clients = (build_review_client(settings, budget), build_review_client(settings, budget))
@@ -163,5 +217,7 @@ def _review_with_real_model(text: str, context: str, budget: RequestBudget | Non
     spent = (budget.used - before) if budget is not None else 0
     draft_sentences = set(split_sentences(text))
     added = [s for s in split_sentences(verdict.final_answer) if s not in draft_sentences]
+    code_verdict, flagged = _code_verdict(text, messages)  # option B: the editor's text is never used
     # reserved_tokens = spent: with a real model each call reserves for itself; nothing is held for the whole review
-    return ReviewResult(text, context, verdict, messages, spent, spent, added)
+    return ReviewResult(text, context, code_verdict, messages, spent, spent, added, editor_verdict=verdict,
+                        flagged=flagged)
