@@ -8,11 +8,17 @@ Index: at startup the app builds its own Chroma index in a temporary directory f
 `chroma_db/` collections used for the Phase 3 evidence are never modified.
 
 Run: .venv\\Scripts\\python.exe -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000
+
+v2: GET / serves the chat page (app/web), GET /health reports liveness and the active provider, and a per-client
+rate limit (app/api/rate_limit.py, off unless configured) protects a public demo. /ws/chat gains two OPT-IN query
+parameters for the chat page: progress=1 sends {"type": "progress", "step": ...} events while a question runs, and
+explain=1 adds an "explain" object to each reply. Without them every message is exactly as before.
 """
 
 from __future__ import annotations
 
 import asyncio
+import math
 import re
 import shutil
 import tempfile
@@ -25,23 +31,30 @@ from chromadb.config import Settings
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from app.api.schemas import (
     AddDocumentRequest, AddDocumentResponse, AskRequest, AskResponse, ErrorBody, ErrorResponse, WsQuestion,
 )
-from app.api.schemas import SESSION_ID_PATTERN
+from app.api.rate_limit import RateLimiter
+from app.api.schemas import SESSION_ID_PATTERN, Explanation
+from app.db import database_url
+from app.llm.settings import LLMSettings
 from app.memory.session_memory import has_session
 from app.observability.logging import DEFAULT_LOG_PATH, JsonlLogger, new_trace_id
-from app.pipeline import SupportAssistant
+from app.pipeline import RequestTrace, SupportAssistant
 from app.rag.chunking import STRATEGIES
 from app.rag.documents import KBDocument, load_knowledge_base
 from app.rag.generation import RECOMMENDED_STRATEGY
 from app.rag.vector_store import get_collection, index_all, index_documents
+from app.core.config import ROOT
+from app.schemas import SupportResponse
 from app.tools.crew_tools import RagLookupTool
 
-CONFLICT, INTERNAL = "conflict", "internal_error"
+CONFLICT, INTERNAL, RATE_LIMITED = "conflict", "internal_error", "rate_limited"
+WEB_DIR = ROOT / "app" / "web"
 
 
 def _safe_validation_details(errors: list[dict]) -> list[dict]:
@@ -54,8 +67,40 @@ def _error(trace_id: str, code: int, kind: str, message: str, details: list[dict
     return JSONResponse(body.model_dump(), status_code=code, headers={"X-Trace-Id": trace_id})
 
 
-def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None) -> FastAPI:
+def _rate_limited(trace_id: str, retry_after: float) -> JSONResponse:
+    seconds = math.ceil(retry_after)
+    response = _error(trace_id, 429, RATE_LIMITED, f"Too many questions. Please try again in {seconds} s.")
+    response.headers["Retry-After"] = str(seconds)
+    return response
+
+
+def _explain(result: SupportResponse, trace: RequestTrace, settings: LLMSettings, latency_ms: float) -> Explanation:
+    """The chat UI's "How this answer was made", from this request's own evidence (never re-computed)."""
+    run, review, draft = trace.crew_run, trace.review, result.draft
+    rag = (run.rag_outputs or [{}])[-1] if run else {}
+    return Explanation(
+        cited_sources=sorted({d for c in (draft.policy_claims if draft else []) for d in c.source_doc_ids}),
+        retrieved_sources=list(rag.get("sources", [])),
+        tools=[*(["rag_lookup"] * len(run.rag_invocations)), *(["check_order_status"] * len(run.order_invocations))]
+        if run else [],
+        grounded=result.guardrails.grounded,
+        rejected_claims=len(result.guardrails.rejected_claims),
+        # Phase 8 rule: decide on whether the text changed, not on the reviewer's `approved` flag.
+        review="not_run" if review is None else "revised" if review.verdict.final_answer != review.draft
+        else "approved",
+        escalation_recommended=draft.order.escalation_recommended if draft and draft.order else None,
+        injection_categories=result.guardrails.injection_categories,
+        provider=settings.provider,
+        model=settings.model if settings.is_real else "deterministic mock",
+        latency_ms=latency_ms,
+        tokens=trace.budget.used if trace.budget else 0,
+    )
+
+
+def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None,
+               rate_limiter: RateLimiter | None = None) -> FastAPI:
     logger = JsonlLogger(log_path)
+    limiter = rate_limiter or RateLimiter.from_env()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -97,8 +142,26 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None)
         request.state.log.update(error_type="validation_error", error_fields=[".".join(d["loc"]) for d in details])
         return _error(request.state.trace_id, 422, "validation_error", "The request is invalid.", details)
 
-    @app.post("/ask", response_model=AskResponse)
-    async def ask(body: AskRequest, request: Request) -> AskResponse:
+    @app.get("/", include_in_schema=False)
+    async def chat_page() -> FileResponse:
+        return FileResponse(WEB_DIR / "index.html")
+
+    app.mount("/static", StaticFiles(directory=WEB_DIR / "static"), name="static")
+
+    @app.get("/health")
+    async def health(request: Request) -> dict:
+        settings = request.app.state.assistant.llm_settings
+        return {"status": "ok", "provider": settings.provider,
+                "model": settings.model if settings.is_real else "deterministic mock",
+                "database": "postgresql" if database_url() else "in-memory",
+                "rate_limit": {"per_minute": limiter.per_minute, "per_day": limiter.per_day}}
+
+    @app.post("/ask", response_model=AskResponse, responses={429: {"model": ErrorResponse}})
+    async def ask(body: AskRequest, request: Request) -> AskResponse | JSONResponse:
+        retry_after = limiter.check(request.client.host if request.client else "unknown")
+        if retry_after is not None:
+            request.state.log.update(error_type=RATE_LIMITED)
+            return _rate_limited(request.state.trace_id, retry_after)
         session_id = body.session_id or f"s-{request.state.trace_id[:12]}"
         new_session = not has_session(session_id)
         result = await run_in_threadpool(request.app.state.assistant.ask, session_id, body.question)
@@ -130,6 +193,8 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None)
     async def chat(websocket: WebSocket):
         session_id = websocket.query_params.get("session_id") or f"ws-{new_trace_id()[:12]}"
         connection_id = new_trace_id()[:12]
+        progress, explain = (websocket.query_params.get(k) == "1" for k in ("progress", "explain"))  # v2 opt-ins
+        client = websocket.client.host if websocket.client else "unknown"
         if not re.fullmatch(SESSION_ID_PATTERN, session_id):
             logger.log(type="websocket", event="rejected", endpoint="/ws/chat", connection_id=connection_id,
                        outcome="client_error", error_type="invalid_session_id")
@@ -152,10 +217,22 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None)
                                connection_id=connection_id, session_id=session_id, outcome="client_error",
                                error_type="validation_error", duration_ms=round((time.perf_counter() - start) * 1000, 2))
                     continue
+                retry_after = limiter.check(client)
+                if retry_after is not None:
+                    await websocket.send_json(ErrorResponse(trace_id=trace_id, error=ErrorBody(
+                        type=RATE_LIMITED, message=f"Too many questions. Please try again in "
+                                                   f"{math.ceil(retry_after)} s.")).model_dump())
+                    logger.log(type="websocket", event="message", endpoint="/ws/chat", trace_id=trace_id,
+                               connection_id=connection_id, session_id=session_id, outcome="client_error",
+                               error_type=RATE_LIMITED, duration_ms=round((time.perf_counter() - start) * 1000, 2))
+                    continue
                 new_session = not has_session(session_id)
-                result = await run_in_threadpool(websocket.app.state.assistant.ask, session_id, question)
-                reply = AskResponse(**result.model_dump(), trace_id=trace_id, new_session=new_session)
-                await websocket.send_json(reply.model_dump())
+                result, trace = await _ask_with_progress(websocket, session_id, question, trace_id, progress)
+                reply = AskResponse(**result.model_dump(), trace_id=trace_id, new_session=new_session).model_dump()
+                if explain:
+                    reply["explain"] = _explain(result, trace, websocket.app.state.assistant.llm_settings,
+                                                round((time.perf_counter() - start) * 1000, 2)).model_dump()
+                await websocket.send_json(reply)
                 logger.log(type="websocket", event="message", endpoint="/ws/chat", trace_id=trace_id,
                            connection_id=connection_id, session_id=session_id, outcome="ok",
                            masked_question=result.masked_question, response_status=result.status,
@@ -178,6 +255,22 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None)
                 pass  # the socket may already be gone
 
     return app
+
+
+async def _ask_with_progress(websocket: WebSocket, session_id: str, question: str, trace_id: str,
+                             progress: bool) -> tuple[SupportResponse, RequestTrace]:
+    """Run one question in the thread pool; with progress=1, forward each pipeline stage as it really starts."""
+    loop, steps = asyncio.get_running_loop(), asyncio.Queue()
+    trace = RequestTrace(on_step=(lambda step: loop.call_soon_threadsafe(steps.put_nowait, step)) if progress else None)
+    task = asyncio.ensure_future(run_in_threadpool(websocket.app.state.assistant.ask, session_id, question, trace))
+    while progress and (not task.done() or not steps.empty()):
+        getter = asyncio.ensure_future(steps.get())
+        await asyncio.wait({task, getter}, return_when=asyncio.FIRST_COMPLETED)
+        if getter.done():
+            await websocket.send_json({"type": "progress", "step": getter.result(), "trace_id": trace_id})
+        else:
+            getter.cancel()
+    return await task, trace
 
 
 def _guardrail_flags(result) -> dict:

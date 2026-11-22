@@ -51,7 +51,7 @@ class WsQuestion(BaseModel):
 
 
 class ErrorBody(BaseModel):
-    type: Literal["validation_error", "conflict", "internal_error"]
+    type: Literal["validation_error", "conflict", "internal_error", "rate_limited"]
     message: str
     details: list[dict[str, Any]] = Field(default_factory=list)
 
@@ -59,3 +59,20 @@ class ErrorBody(BaseModel):
 class ErrorResponse(BaseModel):
     trace_id: str
     error: ErrorBody
+
+
+class Explanation(BaseModel):
+    """v2 chat UI, opt-in (/ws/chat?explain=1): how one reply was made, from that request's own evidence."""
+
+    cited_sources: list[str]  # KB ids the reply cites
+    retrieved_sources: list[str]  # KB ids rag_lookup returned above the similarity threshold
+    tools: list[str]  # tool calls in order (the Retrieval Agent, then the Lookup Agent)
+    grounded: bool | None  # the groundedness guardrail's verdict (None: no crew ran, e.g. a blocked question)
+    rejected_claims: int
+    review: Literal["approved", "revised", "not_run"]
+    escalation_recommended: bool | None  # None: no order was looked up
+    injection_categories: list[str]
+    provider: str
+    model: str
+    latency_ms: float
+    tokens: int  # charged to this request's token budget (estimates for the mock, reported usage for real models)

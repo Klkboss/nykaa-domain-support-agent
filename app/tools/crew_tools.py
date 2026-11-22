@@ -79,6 +79,7 @@ class RagLookupTool(BaseTool):
     generator: MockGroundedGenerator = Field(default_factory=default_generator, exclude=True)
     budget: Any = Field(default=None, exclude=True)  # app.governance.budget.RequestBudget (Phase 8), or None
     cache: Any = Field(default=None, exclude=True)  # app.core.cache.GenerationCache (Task 16), or None
+    on_start: Any = Field(default=None, exclude=True)  # v2: per-request progress hook (chat UI), or None
     _invocations: list[dict[str, Any]] = PrivateAttr(default_factory=list)
     _outputs: list[dict[str, Any]] = PrivateAttr(default_factory=list)
     _cache_events: list[str] = PrivateAttr(default_factory=list)
@@ -99,6 +100,8 @@ class RagLookupTool(BaseTool):
 
     def _run(self, query: str) -> str:
         self._invocations.append({"query": query})
+        if self.on_start:
+            self.on_start()
         try:
             if self.collection is None:
                 self.collection = default_policy_collection()
@@ -144,6 +147,7 @@ class CheckOrderStatusTool(BaseTool):
     # invent an id (a 3B model copied the "ORD-1234" format hint); such a call is refused, nothing is looked up, and
     # the refusal is not order evidence. None = no restriction (the mock path).
     allowed_ids: set[str] | None = Field(default=None, exclude=True)
+    on_start: Any = Field(default=None, exclude=True)  # v2: per-request progress hook (chat UI), or None
     _invocations: list[dict[str, Any]] = PrivateAttr(default_factory=list)
     _outputs: list[dict[str, Any]] = PrivateAttr(default_factory=list)
 
@@ -157,6 +161,8 @@ class CheckOrderStatusTool(BaseTool):
 
     def _run(self, record_id: str) -> str:
         self._invocations.append({"record_id": record_id})
+        if self.on_start:
+            self.on_start()
         if self.allowed_ids is not None and str(record_id).strip().upper() not in self.allowed_ids:
             return json.dumps({"tool": self.name, "not_looked_up": "the customer has not given this order id"})
         try:

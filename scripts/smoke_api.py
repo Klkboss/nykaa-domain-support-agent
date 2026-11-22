@@ -19,7 +19,7 @@ def wait_until_up(base: str, timeout_s: float = 240) -> None:
     deadline = time.monotonic() + timeout_s
     while True:
         try:
-            httpx.get(f"{base}/openapi.json", timeout=5).raise_for_status()
+            httpx.get(f"{base}/health", timeout=5).raise_for_status()
             return
         except httpx.HTTPError:
             if time.monotonic() > deadline:

@@ -18,6 +18,8 @@ RUN python scripts/download_model.py
 # --- runtime ---------------------------------------------------------------------------------------------------
 FROM python:3.12-slim-bookworm AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH MOCK_LLM=true
+# A deployed image is a public demo: per-client question limits are ON (0 turns one off; see app/api/rate_limit.py).
+ENV RATE_LIMIT_PER_MINUTE=6 RATE_LIMIT_PER_DAY=100
 RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 COPY --from=build /opt/venv /opt/venv
@@ -32,5 +34,5 @@ RUN mkdir logs .crewai_storage chroma_db && chown app:app logs .crewai_storage c
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=6 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=4)"]
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
 CMD ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

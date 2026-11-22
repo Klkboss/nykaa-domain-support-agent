@@ -13,13 +13,15 @@ Session history therefore only ever holds masked questions and guardrail-checked
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableLambda
 from pydantic import ValidationError
 
-from app.agents.crew import NO_HISTORY, run_support_crew
+from app.agents.crew import NO_HISTORY, CrewRun, run_support_crew
 from app.core.cache import GenerationCache
 from app.governance.budget import (
     MAX_REQUEST_TOKENS,
@@ -36,7 +38,7 @@ from app.llm.settings import load_llm_settings
 from app.memory.session_memory import get_session_history, has_session, with_session_memory
 from app.rag.documents import split_sentences
 from app.rag.generation import FALLBACK_ANSWER
-from app.review.autogen_review import review_policy_draft
+from app.review.autogen_review import ReviewResult, review_policy_draft
 from app.schemas import GuardrailReport, SupportDraft, SupportResponse, render_reply
 from app.tools.crew_tools import RagLookupTool
 
@@ -44,6 +46,23 @@ MAX_HISTORY_MESSAGES = 10  # assumption: last 5 exchanges is enough context and 
 ERROR_REPLY = "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
 BUDGET_REPLY = ("This request is too large to process within the per-request budget. "
                 "Please shorten it or split it into smaller questions.")
+# v2 chat UI: the stages a request reports while it runs, in order ("order" only when the order tool is called).
+STEPS = ("safety", "policies", "order", "composing", "reviewing")
+
+
+@dataclass
+class RequestTrace:
+    """v2, opt-in, one per request: live stage events out (on_step) and this request's evidence back (for the chat
+    UI's "How this answer was made"). Unlike the last_* attributes it cannot mix up simultaneous requests."""
+
+    on_step: Callable[[str], None] | None = None
+    crew_run: CrewRun | None = None
+    review: ReviewResult | None = None
+    budget: RequestBudget | None = None
+
+    def step(self, name: str) -> None:
+        if self.on_step:
+            self.on_step(name)
 
 
 def format_history(messages: list[BaseMessage]) -> str:
@@ -92,8 +111,10 @@ class SupportAssistant:
         self.last_review = None
         self.last_budget = None
 
-    def ask(self, session_id: str, question: str) -> SupportResponse:
+    def ask(self, session_id: str, question: str, trace: RequestTrace | None = None) -> SupportResponse:
         self.last_review = self.last_budget = None  # Phase 8 evidence hooks describe this request only
+        trace = trace or RequestTrace()
+        trace.step("safety")
         masked = mask_pii(" ".join(question.split()))  # one line: no forged multi-line prompt structure
         report = GuardrailReport(pii_masked={k: v for k, v in masked.counts.items() if v})
         injection = detect_injection(masked.text)
@@ -106,21 +127,21 @@ class SupportAssistant:
             # Oversized: refused before any model call, and not stored, so it cannot inflate later turns.
             return SupportResponse(session_id=session_id, status="budget_exceeded", reply=BUDGET_REPLY,
                                    masked_question=masked.text, guardrails=report)
-        out = self._chain.invoke({"question": masked.text, "report": report},
+        out = self._chain.invoke({"question": masked.text, "report": report, "trace": trace},
                                  config={"configurable": {"session_id": session_id}})
         return out["response"].model_copy(update={"session_id": session_id})
 
     def _answer(self, inputs: dict[str, Any]) -> dict[str, Any]:
-        question, report = inputs["question"], inputs["report"]
-        budget = self.last_budget = RequestBudget(self.max_request_tokens)  # fresh per request: no carry-over
+        question, report, trace = inputs["question"], inputs["report"], inputs["trace"]
+        budget = self.last_budget = trace.budget = RequestBudget(self.max_request_tokens)  # fresh per request
         composer_llm = self._composer_llm_factory(budget=budget) if self._composer_llm_factory else None
         rag_tool = self._rag_tool_factory()
         rag_tool.budget = budget  # the grounded-generation call is a model call too
         rag_tool.cache = self.generation_cache  # caches only that generation call; everything else still runs
         try:
             run = run_support_crew(question, format_history(inputs["history"]), rag_tool,
-                                   composer_llm=composer_llm, budget=budget)
-            self.last_crew_run = run
+                                   composer_llm=composer_llm, budget=budget, on_step=trace.on_step)
+            self.last_crew_run = trace.crew_run = run
             draft = SupportDraft.model_validate(run.structured.model_dump() if run.structured else run.raw)
         except BudgetExceeded:
             return self._over_budget(question, report)
@@ -130,8 +151,9 @@ class SupportAssistant:
             return self._failure(question, report, f"crew: {_failure_kind(e)}")
         rag_output, order_output = (run.rag_outputs or [None])[-1], (run.order_outputs or [None])[-1]
         checked, grounding = check_draft(draft, rag_output, order_output)
+        trace.step("reviewing")
         try:  # spec Task 14: the Composer's draft (before the guardrail) + the original retrieved context
-            self.last_review = review_policy_draft(draft, rag_output, budget)
+            self.last_review = trace.review = review_policy_draft(draft, rag_output, budget)
         except BudgetExceeded:
             return self._over_budget(question, report)
         except Exception as e:  # v2: a real reviewer can fail (server down, timeout): never ship an unreviewed draft

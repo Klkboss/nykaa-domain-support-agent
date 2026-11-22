@@ -21,6 +21,8 @@ v2, real provider (LLM_PROVIDER=ollama|openai_compatible with MOCK_LLM=false); t
 from __future__ import annotations
 
 import json
+import warnings
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -149,13 +151,15 @@ class CrewRun:
 
 def build_support_crew(
     rag_tool: RagLookupTool | None = None, verbose: bool = False, composer_llm: BaseLLM | None = None,
-    budget: RequestBudget | None = None,
+    budget: RequestBudget | None = None, on_step: Callable[[str], None] | None = None,
 ) -> SupportCrew:
     settings = load_llm_settings()
     if not config.MOCK_LLM and not settings.is_real:
         raise NotImplementedError("MOCK_LLM=false needs a real provider: set LLM_PROVIDER=ollama or openai_compatible.")
     rag_tool = rag_tool or RagLookupTool()
     order_tool = CheckOrderStatusTool()
+    if on_step:  # v2 chat UI: real stage events (a tool really starts), never a timer
+        rag_tool.on_start, order_tool.on_start = (lambda: on_step("policies")), (lambda: on_step("order"))
     llms: dict[str, BaseLLM]
     if settings.is_real:
         llms = {"retrieval": build_crew_llm(settings, budget), "lookup": build_crew_llm(settings, budget),
@@ -193,13 +197,18 @@ def build_support_crew(
         expected_output="The rag_lookup JSON result: grounded flag, answer, claims, sources and retrieved context.",
         agent=retrieval_agent,
     )
-    lookup_task = Task(
-        description=history + "Customer question: {question}\nIf the question or the conversation names an order "
-                              "id the customer is asking about, look that order up.",
-        expected_output="The check_order_status JSON result, or a note that no order lookup was possible.",
-        agent=lookup_agent,
-        context=[],
-    )
+    with warnings.catch_warnings():
+        # The per-request progress callback is a closure, which CrewAI warns it cannot checkpoint. This crew is built
+        # fresh per request and never checkpointed, so that one warning is expected here.
+        warnings.filterwarnings("ignore", message="A function callback cannot be saved in a checkpoint")
+        lookup_task = Task(
+            description=history + "Customer question: {question}\nIf the question or the conversation names an "
+                                  "order id the customer is asking about, look that order up.",
+            expected_output="The check_order_status JSON result, or a note that no order lookup was possible.",
+            agent=lookup_agent,
+            context=[],
+            callback=(lambda _output: on_step("composing")) if on_step else None,  # the Composer task starts next
+        )
     # Real models: the provider enforces the SupportDraft JSON schema (response_format on the Composer's LLM) and the
     # guardrail validates it, with one retry. output_pydantic is mock-only: with a tool-calling LLM CrewAI would
     # parse inside the agent's own call, where a validation error bypasses the guardrail's retry.
@@ -234,8 +243,9 @@ def run_support_crew(
     verbose: bool = False,
     composer_llm: BaseLLM | None = None,
     budget: RequestBudget | None = None,
+    on_step: Callable[[str], None] | None = None,
 ) -> CrewRun:
-    support = build_support_crew(rag_tool, verbose, composer_llm, budget)  # fresh crew per run: no state leaks
+    support = build_support_crew(rag_tool, verbose, composer_llm, budget, on_step)  # fresh crew per run: no state leaks
     if support.real:  # v2: a real model may only look up an order id the customer actually wrote
         support.order_tool.allowed_ids = {m.upper() for m in RECORD_ID_RE.findall(f"{question}\n{history}")}
     out = support.crew.kickoff(inputs={"question": question, "history": history})
