@@ -1,0 +1,115 @@
+# v2 CI. Needs no secrets: MOCK_LLM, no API keys, a throwaway Postgres service. Every action is pinned to a full
+# commit SHA (the tag is in the comment). The same commands run locally (see README, "Docker and CI").
+name: CI
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+    branches: [main, v2]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MOCK_LLM: "true"  # the default, stated explicitly
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  test:
+    name: Lint, types and tests (MOCK_LLM + PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test  # throwaway CI-only database on the runner, not a secret
+          POSTGRES_DB: test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test -d test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.lock.linux.txt
+            requirements-dev.txt
+
+      - name: Install from the Linux lock (CPU-only torch) + dev tools
+        run: pip install -r requirements.lock.linux.txt -r requirements-dev.txt
+
+      - name: Cache the embedding model
+        id: model
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: models
+          key: embedding-model-${{ hashFiles('scripts/download_model.py') }}
+
+      - name: Download the pinned embedding model
+        if: steps.model.outputs.cache-hit != 'true'
+        run: python scripts/download_model.py
+
+      # chroma_db/ is git-ignored, and tests/test_api.py checks the approved index is never touched, so build it
+      # with the documented setup step. On Linux it rewrites rag_threshold_calibration.json with float32 noise
+      # (raw similarities differ by <= 2e-7, measured); thresholds and recommendations come out identical, and the
+      # tests re-derive them from live measurements.
+      - name: Build the approved chroma_db/ index
+        run: python scripts/run_rag_evaluation.py
+
+      - name: Lint and type checks (blocking on v2 code, report-only on the capstone code)
+        run: python scripts/check_v2.py
+
+      - name: Full test suite (MOCK_LLM, no database, outbound network blocked by tests/conftest.py)
+        run: python -m pytest -q
+
+      - name: PostgreSQL integration tests (fail, never skip, if the database is missing)
+        env:
+          TEST_DATABASE_URL: postgresql://test:test@localhost:5432/test
+          REQUIRE_TEST_DATABASE: "1"
+        run: python -m pytest -q -rs tests_v2/test_v2_postgres.py tests_v2/test_v2_db.py
+
+  docker:
+    name: Docker image + compose smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      POSTGRES_PASSWORD: ci${{ github.run_id }}  # per-run throwaway value for the compose database
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the image and start postgres -> migrate -> api
+        run: docker compose up --build --detach --wait --wait-timeout 300
+
+      - name: Smoke test over HTTP (policy + order question in one session)
+        run: docker compose exec -T api python scripts/smoke_api.py
+
+      - name: Check the database holds the seeded orders and the chat history
+        run: |
+          orders=$(docker compose exec -T postgres psql -U nykaa -d nykaa -tAc "SELECT count(*) FROM orders")
+          messages=$(docker compose exec -T postgres psql -U nykaa -d nykaa -tAc "SELECT count(*) FROM chat_messages")
+          echo "orders=$orders chat_messages=$messages"
+          test "$orders" -eq 50 && test "$messages" -ge 4
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes

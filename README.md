@@ -1,5 +1,7 @@
 # Nykaa Domain Support Agent (CrewAI + AutoGen)
 
+[![CI](https://github.com/Klkboss/nykaa-domain-support-agent/actions/workflows/ci.yml/badge.svg?branch=v2)](https://github.com/Klkboss/nykaa-domain-support-agent/actions/workflows/ci.yml)
+
 **Track: Nykaa (E-commerce & Retail).** Final capstone. Spec: [docs/assignment.md](docs/assignment.md).
 
 **Status: complete.** All 16 tasks are implemented, tested and independently reviewed (build phases 0–9).
@@ -733,6 +735,32 @@ never order lookups or complete responses).
   1.5.9's `InternalError: Error finding id` during Phase 8 (trigger unknown). On that error the reply is "Policy
   search is temporarily unavailable"; if the index returns nothing, the reply is the refusal. Neither is ever an
   unsupported answer, and nothing is cached.
+
+## Docker and CI (v2)
+The whole stack in containers: PostgreSQL, a one-shot `migrate` service (`alembic upgrade head` plus the
+idempotent seed of the 50 orders), then the API on http://127.0.0.1:8000. `MOCK_LLM=true` unless `.env` says
+otherwise.
+```powershell
+copy .env.example .env          # then set POSTGRES_PASSWORD (letters and digits); .env is git-ignored
+docker compose up --build       # first build downloads ~2.3 GB of dependencies and the pinned embedding model
+docker compose down --volumes   # stop and delete the database volume
+```
+- **Image:** multi-stage `python:3.12-slim-bookworm` running as a non-root user. It has CPU-only torch from
+  [requirements.lock.linux.txt](requirements.lock.linux.txt) and the embedding model at the pinned revision
+  `1110a24…`, the one the retrieval thresholds were calibrated on. It needs no network at runtime.
+- **Linux lock:** every package shared with the Windows lock has the same version. The only differences are
+  torch `+cpu`, `uvloop` added, and the Windows-only `pywin32`/`colorama` absent.
+- **Real model in compose:** set `MOCK_LLM=false` and `LLM_PROVIDER=ollama` in `.env`. By default the API
+  container uses the host's Ollama (and its GPU) through `host.docker.internal`. `docker compose --profile ollama up`
+  adds a CPU-only Ollama container instead; then set `DOCKER_OLLAMA_BASE_URL=http://ollama:11434`.
+- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on pushes and pull requests to `main` and `v2`.
+  It needs no secrets, and every action is pinned to a commit SHA.
+  - The `test` job installs from the Linux lock, downloads the pinned model and builds `chroma_db/`. It then runs
+    `scripts/check_v2.py` and the full suite under `MOCK_LLM` with outbound network blocked, then the PostgreSQL
+    tests against a service container (they fail, rather than skip, if it is missing).
+  - The `docker` job builds the image and runs `docker compose up --wait`. It then runs
+    [scripts/smoke_api.py](scripts/smoke_api.py) (a policy question and an order question over HTTP) and checks
+    the database holds the 50 orders and the chat history.
 
 ## All commands
 ```powershell

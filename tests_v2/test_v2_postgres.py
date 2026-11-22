@@ -39,7 +39,10 @@ def _reachable() -> bool:
         return False
 
 
-pytestmark = pytest.mark.skipif(not _reachable(), reason="set TEST_DATABASE_URL to a reachable PostgreSQL database")
+_REACHABLE = _reachable()
+if os.environ.get("REQUIRE_TEST_DATABASE") == "1" and not _REACHABLE:  # CI: a missing database fails, never skips
+    raise RuntimeError("REQUIRE_TEST_DATABASE=1 but TEST_DATABASE_URL is not a reachable PostgreSQL database")
+pytestmark = pytest.mark.skipif(not _REACHABLE, reason="set TEST_DATABASE_URL to a reachable PostgreSQL database")
 
 
 @pytest.fixture
