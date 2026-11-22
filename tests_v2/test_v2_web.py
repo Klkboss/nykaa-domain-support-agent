@@ -116,6 +116,15 @@ def test_the_chat_page_is_served_with_a_strict_csp_and_no_third_party_assets(web
         assert (WEB_DIR / "static" / "fonts" / f"{font}-OFL.txt").read_text(encoding="utf-8").count("SIL OPEN FONT")
 
 
+def test_the_measured_demo_questions_are_exactly_the_chat_pages_samples():
+    from scripts.run_provider_comparison import DEMO
+
+    script = (WEB_DIR / "static" / "app.js").read_text(encoding="utf-8")
+    samples = re.findall(r'^\s*\["([^"]+)", "([^"]+)"\],?$', script.split("const SAMPLES = [", 1)[1].split("];")[0],
+                         re.M)
+    assert samples == [(kind, question) for kind, question, _ in DEMO]
+
+
 def test_the_page_never_inserts_server_text_as_html():
     script = (WEB_DIR / "static" / "app.js").read_text(encoding="utf-8")
     assert "innerHTML" not in script and "insertAdjacentHTML" not in script and "eval(" not in script
