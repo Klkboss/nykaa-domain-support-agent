@@ -1,0 +1,1116 @@
+{
+  "ollama": "http://127.0.0.1:11434",
+  "cap_tokens": 60000,
+  "results": [
+    {
+      "model": "qwen2.5:3b-instruct",
+      "load_s": 19.8,
+      "ollama_ps": {
+        "size_bytes": 2163568803,
+        "size_vram_bytes": 2163568803,
+        "gpu_fraction": 1.0,
+        "context": 4096
+      },
+      "rows": [
+        {
+          "question": "How long do I have to return shoes?",
+          "status": "error",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 6.85,
+          "tokens": 3217,
+          "crew_calls": {},
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 0,
+          "rag_called": false,
+          "order_lookups": [],
+          "routing_ok": false,
+          "composer_attempts": null,
+          "draft_repairs": [],
+          "grounded": null,
+          "rejected_claims": [
+            "crew: draft_invalid_after_retry"
+          ],
+          "reply": "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+        },
+        {
+          "question": "What is the status of my order ORD-1016?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 8.2,
+          "tokens": 2415,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1016"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-12): specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score. Level 2 specialists respond within 4 business hours and aim\nOrder information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+        },
+        {
+          "question": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?",
+          "status": "error",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 2.9,
+          "tokens": 934,
+          "crew_calls": {},
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 0,
+          "rag_called": false,
+          "order_lookups": [],
+          "routing_ok": false,
+          "composer_attempts": null,
+          "draft_repairs": [],
+          "grounded": null,
+          "rejected_claims": [
+            "schema: ValueError"
+          ],
+          "reply": "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+        },
+        {
+          "question": "Where is my order ORD-9999?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 6.0,
+          "tokens": 1936,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-9999"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [
+            "needs_order_id"
+          ],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-11): International orders cannot be returned or exchanged, but damaged-item claims are still accepted within 48 hours of delivery.\nOrder information: No order found with record_id ORD-9999. No order details have been assumed."
+        },
+        {
+          "question": "What is the best way to train for a marathon?",
+          "status": "fallback",
+          "expected_status": [
+            "fallback"
+          ],
+          "status_ok": true,
+          "latency_s": 2.8,
+          "tokens": 1118,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [],
+          "review_calls": 0,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Can you check my order status?",
+          "status": "answered",
+          "expected_status": [
+            "needs_order_id"
+          ],
+          "status_ok": false,
+          "latency_s": 8.81,
+          "tokens": 2798,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": false,
+          "rejected_claims": [],
+          "reply": "Policy information: An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support. [KB-03] Items that arrive damaged, defective, expired or different from what was ordered must be reported through the Help Centre within 48 hours of delivery. [KB-10]"
+        },
+        {
+          "question": "How long do I have to return shoes?",
+          "status": "error",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 7.36,
+          "tokens": 3244,
+          "crew_calls": {},
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 0,
+          "rag_called": false,
+          "order_lookups": [],
+          "routing_ok": false,
+          "composer_attempts": null,
+          "draft_repairs": [],
+          "grounded": null,
+          "rejected_claims": [
+            "crew: draft_invalid_after_retry"
+          ],
+          "reply": "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+        },
+        {
+          "question": "What is the status of my order ORD-1016?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 7.95,
+          "tokens": 2415,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1016"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-12): specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score. Level 2 specialists respond within 4 business hours and aim\nOrder information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+        },
+        {
+          "question": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?",
+          "status": "error",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 2.91,
+          "tokens": 934,
+          "crew_calls": {},
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 0,
+          "rag_called": false,
+          "order_lookups": [],
+          "routing_ok": false,
+          "composer_attempts": null,
+          "draft_repairs": [],
+          "grounded": null,
+          "rejected_claims": [
+            "schema: ValueError"
+          ],
+          "reply": "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+        },
+        {
+          "question": "Where is my order ORD-9999?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 5.93,
+          "tokens": 1936,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-9999"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [
+            "needs_order_id"
+          ],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-11): International orders cannot be returned or exchanged, but damaged-item claims are still accepted within 48 hours of delivery.\nOrder information: No order found with record_id ORD-9999. No order details have been assumed."
+        },
+        {
+          "question": "What is the best way to train for a marathon?",
+          "status": "fallback",
+          "expected_status": [
+            "fallback"
+          ],
+          "status_ok": true,
+          "latency_s": 2.72,
+          "tokens": 1118,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [],
+          "review_calls": 0,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Can you check my order status?",
+          "status": "answered",
+          "expected_status": [
+            "needs_order_id"
+          ],
+          "status_ok": false,
+          "latency_s": 8.51,
+          "tokens": 2802,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [
+            "needs_order_id"
+          ],
+          "grounded": false,
+          "rejected_claims": [],
+          "reply": "Policy information: An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support. [KB-03] Items that arrive damaged, defective, expired or different from what was ordered must be reported through the Help Centre within 48 hours of delivery. [KB-10]"
+        }
+      ],
+      "stress": {
+        "question_chars": 1940,
+        "history_messages": 10,
+        "status": "answered",
+        "latency_s": 7.31,
+        "tokens": 5094
+      }
+    },
+    {
+      "model": "qwen3:4b-instruct-2507-q4_K_M",
+      "load_s": 11.3,
+      "ollama_ps": {
+        "size_bytes": 3180247121,
+        "size_vram_bytes": 3180247121,
+        "gpu_fraction": 1.0,
+        "context": 4096
+      },
+      "rows": [
+        {
+          "question": "How long do I have to return shoes?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 6.22,
+          "tokens": 2545,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox."
+        },
+        {
+          "question": "What is the status of my order ORD-1016?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 8.43,
+          "tokens": 2652,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1016"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-12): specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score."
+        },
+        {
+          "question": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?",
+          "status": "fallback",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 9.3,
+          "tokens": 2816,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1029"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Where is my order ORD-9999?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 7.74,
+          "tokens": 2158,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-9999"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-11): International orders cannot be returned or exchanged, but damaged-item claims are still accepted within 48 hours of delivery."
+        },
+        {
+          "question": "What is the best way to train for a marathon?",
+          "status": "fallback",
+          "expected_status": [
+            "fallback"
+          ],
+          "status_ok": true,
+          "latency_s": 2.74,
+          "tokens": 1176,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [],
+          "review_calls": 0,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Can you check my order status?",
+          "status": "answered",
+          "expected_status": [
+            "needs_order_id"
+          ],
+          "status_ok": false,
+          "latency_s": 10.6,
+          "tokens": 2887,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-9876"
+          ],
+          "routing_ok": false,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-03): An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support."
+        },
+        {
+          "question": "How long do I have to return shoes?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 6.49,
+          "tokens": 2545,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox."
+        },
+        {
+          "question": "What is the status of my order ORD-1016?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 8.22,
+          "tokens": 2652,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1016"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-12): specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score."
+        },
+        {
+          "question": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?",
+          "status": "fallback",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 8.99,
+          "tokens": 2816,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1029"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Where is my order ORD-9999?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 7.53,
+          "tokens": 2158,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-9999"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-11): International orders cannot be returned or exchanged, but damaged-item claims are still accepted within 48 hours of delivery."
+        },
+        {
+          "question": "What is the best way to train for a marathon?",
+          "status": "fallback",
+          "expected_status": [
+            "fallback"
+          ],
+          "status_ok": true,
+          "latency_s": 2.58,
+          "tokens": 1176,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [],
+          "review_calls": 0,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Can you check my order status?",
+          "status": "answered",
+          "expected_status": [
+            "needs_order_id"
+          ],
+          "status_ok": false,
+          "latency_s": 10.61,
+          "tokens": 2909,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-9876"
+          ],
+          "routing_ok": false,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-03): An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support."
+        }
+      ],
+      "stress": {
+        "question_chars": 1940,
+        "history_messages": 10,
+        "status": "answered",
+        "latency_s": 8.1,
+        "tokens": 4393
+      }
+    },
+    {
+      "model": "qwen2.5:7b-instruct",
+      "load_s": 20.2,
+      "ollama_ps": {
+        "size_bytes": 5152041860,
+        "size_vram_bytes": 4199263764,
+        "gpu_fraction": 0.815,
+        "context": 4096
+      },
+      "rows": [
+        {
+          "question": "How long do I have to return shoes?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 11.26,
+          "tokens": 2669,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-123456"
+          ],
+          "routing_ok": false,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.\nPlease share your order ID (format ORD-1234) so I can check it."
+        },
+        {
+          "question": "What is the status of my order ORD-1016?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 20.53,
+          "tokens": 3039,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1016"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-12): specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score. Level 2 specialists respond within 4 business hours and aim\nOrder information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+        },
+        {
+          "question": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 23.58,
+          "tokens": 3191,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1029"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information: Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox. [KB-01] Customers are told their case reference number and current escalation level at every handover. [KB-12]\nOrder information (ORD-1029): status Delivered, order value ₹3,562. Escalation score 0.92 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+        },
+        {
+          "question": "Where is my order ORD-9999?",
+          "status": "error",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 17.61,
+          "tokens": 3013,
+          "crew_calls": {},
+          "generation": [
+            "fallback:quote_not_in_context"
+          ],
+          "review_calls": 0,
+          "rag_called": false,
+          "order_lookups": [],
+          "routing_ok": false,
+          "composer_attempts": null,
+          "draft_repairs": [],
+          "grounded": null,
+          "rejected_claims": [
+            "crew: draft_invalid_after_retry"
+          ],
+          "reply": "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+        },
+        {
+          "question": "What is the best way to train for a marathon?",
+          "status": "fallback",
+          "expected_status": [
+            "fallback"
+          ],
+          "status_ok": true,
+          "latency_s": 5.41,
+          "tokens": 1281,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [],
+          "review_calls": 0,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Can you check my order status?",
+          "status": "answered",
+          "expected_status": [
+            "needs_order_id"
+          ],
+          "status_ok": false,
+          "latency_s": 19.72,
+          "tokens": 3133,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-123456"
+          ],
+          "routing_ok": false,
+          "composer_attempts": 1,
+          "draft_repairs": [
+            "needs_order_id"
+          ],
+          "grounded": false,
+          "rejected_claims": [],
+          "reply": "Policy information: An order counts as a delayed shipment when it has not been delivered by the promised date shown at checkout, and delayed orders are prioritised for proactive support. [KB-03] Items that arrive damaged, defective, expired or different from what was ordered must be reported through the Help Centre within 48 hours of delivery. [KB-10]"
+        },
+        {
+          "question": "How long do I have to return shoes?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 12.09,
+          "tokens": 2669,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-123456"
+          ],
+          "routing_ok": false,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-01): Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox.\nPlease share your order ID (format ORD-1234) so I can check it."
+        },
+        {
+          "question": "What is the status of my order ORD-1016?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 20.17,
+          "tokens": 3039,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1016"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information (source: KB-12): specialist, if it is unresolved after 24 hours, if the order value is above ₹10,000, or if the order is flagged as a delayed shipment with a high escalation score. Level 2 specialists respond within 4 business hours and aim\nOrder information (ORD-1016): status Returned, order value ₹8,504. Escalation score 0.9467 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+        },
+        {
+          "question": "My order ORD-1029 arrived late. Can I still return the shoes, and is my case being escalated?",
+          "status": "answered",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": true,
+          "latency_s": 22.2,
+          "tokens": 3191,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 2,
+          "rag_called": true,
+          "order_lookups": [
+            "ORD-1029"
+          ],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "Policy information: Footwear can be returned within 30 days of delivery if it is unworn and sent back in its original shoebox. [KB-01] Customers are told their case reference number and current escalation level at every handover. [KB-12]\nOrder information (ORD-1029): status Delivered, order value ₹3,562. Escalation score 0.92 (threshold 0.78) meets the escalation threshold, so this case is flagged for escalation."
+        },
+        {
+          "question": "Where is my order ORD-9999?",
+          "status": "error",
+          "expected_status": [
+            "answered"
+          ],
+          "status_ok": false,
+          "latency_s": 16.52,
+          "tokens": 3013,
+          "crew_calls": {},
+          "generation": [
+            "fallback:quote_not_in_context"
+          ],
+          "review_calls": 0,
+          "rag_called": false,
+          "order_lookups": [],
+          "routing_ok": false,
+          "composer_attempts": null,
+          "draft_repairs": [],
+          "grounded": null,
+          "rejected_claims": [
+            "crew: draft_invalid_after_retry"
+          ],
+          "reply": "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+        },
+        {
+          "question": "What is the best way to train for a marathon?",
+          "status": "fallback",
+          "expected_status": [
+            "fallback"
+          ],
+          "status_ok": true,
+          "latency_s": 5.1,
+          "tokens": 1281,
+          "crew_calls": {
+            "retrieval": 1,
+            "lookup": 1,
+            "composer": 1
+          },
+          "generation": [],
+          "review_calls": 0,
+          "rag_called": true,
+          "order_lookups": [],
+          "routing_ok": true,
+          "composer_attempts": 1,
+          "draft_repairs": [],
+          "grounded": true,
+          "rejected_claims": [],
+          "reply": "I don't have sufficient information in my knowledge base to answer that question."
+        },
+        {
+          "question": "Can you check my order status?",
+          "status": "error",
+          "expected_status": [
+            "needs_order_id"
+          ],
+          "status_ok": false,
+          "latency_s": 23.99,
+          "tokens": 4126,
+          "crew_calls": {},
+          "generation": [
+            "quotes"
+          ],
+          "review_calls": 0,
+          "rag_called": false,
+          "order_lookups": [],
+          "routing_ok": false,
+          "composer_attempts": null,
+          "draft_repairs": [],
+          "grounded": null,
+          "rejected_claims": [
+            "crew: draft_invalid_after_retry"
+          ],
+          "reply": "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+        }
+      ],
+      "stress": {
+        "question_chars": 1940,
+        "history_messages": 10,
+        "status": "answered",
+        "latency_s": 18.55,
+        "tokens": 5382
+      }
+    }
+  ],
+  "summary": [
+    {
+      "model": "qwen2.5:3b-instruct",
+      "gpu_fraction": 1.0,
+      "status_ok": "6/12",
+      "routing_ok": "8/12",
+      "errors": 4,
+      "latency_s_median": 6.425,
+      "latency_s_max": 8.81,
+      "tokens_median": 2175.5,
+      "tokens_max": 3244,
+      "model_calls_median": 4.5,
+      "generation_verified": "10/10",
+      "composer_first_try": "8/8",
+      "draft_repairs": 3,
+      "stress_tokens": 5094,
+      "stress_status": "answered",
+      "failure_reasons": [
+        "crew: draft_invalid_after_retry",
+        "schema: ValueError"
+      ]
+    },
+    {
+      "model": "qwen3:4b-instruct-2507-q4_K_M",
+      "gpu_fraction": 1.0,
+      "status_ok": "8/12",
+      "routing_ok": "10/12",
+      "errors": 0,
+      "latency_s_median": 7.98,
+      "latency_s_max": 10.61,
+      "tokens_median": 2598.5,
+      "tokens_max": 2909,
+      "model_calls_median": 6.0,
+      "generation_verified": "10/10",
+      "composer_first_try": "12/12",
+      "draft_repairs": 0,
+      "stress_tokens": 4393,
+      "stress_status": "answered",
+      "failure_reasons": []
+    },
+    {
+      "model": "qwen2.5:7b-instruct",
+      "gpu_fraction": 0.815,
+      "status_ok": "8/12",
+      "routing_ok": "6/12",
+      "errors": 3,
+      "latency_s_median": 18.665,
+      "latency_s_max": 23.99,
+      "tokens_median": 3026.0,
+      "tokens_max": 4126,
+      "model_calls_median": 6.0,
+      "generation_verified": "8/10",
+      "composer_first_try": "9/9",
+      "draft_repairs": 1,
+      "stress_tokens": 5382,
+      "stress_status": "answered",
+      "failure_reasons": [
+        "crew: draft_invalid_after_retry"
+      ]
+    }
+  ]
+}
