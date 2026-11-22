@@ -9,6 +9,8 @@ Keys are read from .env (git-ignored) by NAME and are never printed or written: 
 characters with every key value replaced by "***". The Cloudflare account ID is only ever written as
 ${CLOUDFLARE_ACCOUNT_ID}.
 
+GitHub Models was probed on 2026-11-23 and found retired (see hosted_probe.json); it is no longer a candidate.
+
 Usage: python scripts/probe_hosted_providers.py [candidate ...]
 """
 
@@ -37,7 +39,6 @@ CANDIDATES: dict[str, tuple[str, str, str, str | None]] = {
                          "GEMINI_API_KEY", "low"),
     "cloudflare-gpt-oss-120b": (CF, "@cf/openai/gpt-oss-120b", "CLOUDFLARE_API_TOKEN", "low"),
     "cloudflare-gpt-oss-20b": (CF, "@cf/openai/gpt-oss-20b", "CLOUDFLARE_API_TOKEN", "low"),
-    "github-models-gpt-4.1": ("https://models.github.ai/inference", "openai/gpt-4.1", "GITHUB_MODELS_TOKEN", None),
 }
 SCHEMA = {"type": "json_schema", "json_schema": {"name": "answer", "schema": {
     "type": "object", "properties": {"quotes": {"type": "array", "items": {"type": "string"}}},
@@ -61,11 +62,6 @@ def scrub(text: str, secrets: list[str]) -> str:
 
 
 def model_ids(client: httpx.Client, base: str, provider: str) -> list[str] | str:
-    if provider.startswith("github"):
-        r = client.get("https://models.github.ai/catalog/models")
-        if "json" not in r.headers.get("content-type", ""):
-            return f"HTTP {r.status_code}, not JSON ({r.headers.get('content-type', '?')})"
-        return [m["id"] for m in r.json()] if r.status_code == 200 else f"HTTP {r.status_code}"
     r = client.get(base + "/models")
     if r.status_code == 200:
         body = r.json()

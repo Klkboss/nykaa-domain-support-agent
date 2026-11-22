@@ -19,7 +19,7 @@ from app.governance.budget import MAX_REQUEST_TOKENS_REAL
 from app.llm.crew_llm import HIDDEN, install_log_redaction, redact_provider_text
 from app.llm.generator import LLMGroundedGenerator
 from app.llm.settings import LLMSettings, load_llm_settings
-from app.pipeline import ERROR_REPLY, SupportAssistant
+from app.pipeline import BUSY_REPLY, ERROR_REPLY, SupportAssistant
 from app.rag.documents import split_sentences
 from app.rag.generation import RECOMMENDED_STRATEGY, MockGroundedGenerator
 from app.rag.retrieval import search
@@ -249,7 +249,7 @@ def test_failure_reasons_are_fixed_labels_never_message_text():
 def test_server_down_or_timeout_anywhere_in_the_crew_gives_the_polite_reply(assistant, role, failure, kind):
     a, _, _ = assistant(**{role: failure})
     r = ask(a, ORDER)
-    assert (r.status, r.reply, r.draft) == ("error", ERROR_REPLY, None)
+    assert (r.status, r.reply, r.draft) == ("error", BUSY_REPLY, None)
     assert r.guardrails.rejected_claims == [f"crew: {kind}"]
 
 
@@ -257,7 +257,7 @@ def test_ollama_stopped_completely_gives_the_polite_reply_and_releases_the_budge
     down = httpx.ConnectError("refused")
     a, fake, _ = assistant(retrieval=down, lookup=down, generator=down, composer=down, reviewer=down, editor=down)
     r = ask(a, SHOES)
-    assert (r.status, r.reply) == ("error", ERROR_REPLY) and a.last_budget.used == 0
+    assert (r.status, r.reply) == ("error", BUSY_REPLY) and a.last_budget.used == 0
 
 
 def test_an_invalid_draft_after_the_retry_gives_the_polite_reply(assistant):
@@ -279,7 +279,7 @@ def test_composer_returning_non_json_after_the_retry_gives_the_polite_reply(assi
 def test_a_failing_reviewer_gives_the_polite_reply_not_an_unreviewed_answer(assistant, step, kind):
     a, _, _ = assistant(reviewer=step)
     r = ask(a, SHOES)
-    assert (r.status, r.reply) == ("error", ERROR_REPLY)
+    assert (r.status, r.reply) == ("error", BUSY_REPLY)
     assert r.guardrails.rejected_claims == [f"review: {kind}"]
 
 
@@ -530,3 +530,99 @@ def test_a_reasoning_models_thoughts_are_never_read_as_reviewer_flags(assistant,
     r = ask(a, SHOES)
     assert r.status == "answered" and s1 in r.reply and s2 in r.reply and "Let me check" not in r.reply
     assert a.last_review.verdict.approved and a.last_review.flagged == ()
+
+
+
+# --- failover (owner decision: Groq first, Cloudflare on a provider error, then a busy reply) -----------------------
+
+FALLBACK_URL = "http://fallback.test/v1"
+
+
+class Router:
+    """Two fake providers behind one transport, told apart by host: llm.test (primary) and fallback.test."""
+
+    def __init__(self, primary, fallback) -> None:
+        self.primary, self.fallback = primary, fallback
+        self.hosts: list[str] = []
+
+    def handler(self, request: httpx.Request) -> httpx.Response:
+        self.hosts.append(request.url.host)
+        return (self.fallback if request.url.host == "fallback.test" else self.primary).handler(request)
+
+    def sync_client(self) -> httpx.Client:
+        return httpx.Client(transport=httpx.MockTransport(self.handler))
+
+    def async_client(self) -> httpx.AsyncClient:
+        async def ahandler(request: httpx.Request) -> httpx.Response:
+            return self.handler(request)
+
+        return httpx.AsyncClient(transport=httpx.MockTransport(ahandler))
+
+
+def failover_assistant(collections, real_provider, monkeypatch, primary, fallback):
+    monkeypatch.setenv("LLM_FALLBACK_BASE_URL", FALLBACK_URL)
+    monkeypatch.setenv("LLM_FALLBACK_MODEL", "fallback-model")
+    router = real_provider(Router(primary, fallback))
+
+    def tool():  # like production: the generator reads the active provider's settings when the tool is built
+        gen = LLMGroundedGenerator(load_llm_settings(), http_client=router.sync_client())
+        return RagLookupTool(collection=collections[RECOMMENDED_STRATEGY], generator=gen)
+
+    return SupportAssistant(rag_tool_factory=tool, generation_cache=GenerationCache(max_entries=0)), router
+
+
+RATE_LIMITED = status(429, **{"retry-after": "0"})
+ALL_ROLES = ("retrieval", "lookup", "generator", "composer", "reviewer", "editor")
+
+
+def test_a_rate_limited_primary_fails_over_and_the_fallback_answers(collections, real_provider, monkeypatch):
+    from app.pipeline import RequestTrace
+
+    a, router = failover_assistant(collections, real_provider, monkeypatch,
+                                   CrewFake(**{role: RATE_LIMITED for role in ALL_ROLES}), CrewFake())
+    trace = RequestTrace()
+    r = a.ask(f"s-{uuid.uuid4().hex[:8]}", SHOES, trace)
+    assert r.status == "answered" and r.reply != BUSY_REPLY
+    assert trace.failover and trace.settings.base_url == FALLBACK_URL and trace.settings.model == "fallback-model"
+    assert "llm.test" in router.hosts and router.hosts[-1] == "fallback.test"
+    assert set(router.fallback.roles) >= {"retrieval", "generator", "composer", "reviewer", "editor"}
+
+
+def test_when_both_providers_fail_the_reply_says_busy_not_the_generic_error(collections, real_provider, monkeypatch):
+    from app.pipeline import RequestTrace
+
+    down = httpx.ConnectError("refused")
+    a, _ = failover_assistant(collections, real_provider, monkeypatch,
+                              CrewFake(**{role: RATE_LIMITED for role in ALL_ROLES}),
+                              CrewFake(**{role: down for role in ALL_ROLES}))
+    trace = RequestTrace()
+    r = a.ask(f"s-{uuid.uuid4().hex[:8]}", SHOES, trace)
+    assert (r.status, r.reply) == ("error", BUSY_REPLY) and trace.failover
+    assert r.guardrails.rejected_claims == ["crew: provider_unavailable"]  # the fallback's own failure
+
+
+def test_a_failure_that_is_not_the_providers_is_not_retried_elsewhere(collections, real_provider, monkeypatch):
+    bad_draft = completion('{"policy_claims": [{"text": "x", "source_doc_ids": ["nope"]}]}')
+    a, router = failover_assistant(collections, real_provider, monkeypatch, CrewFake(composer=bad_draft), CrewFake())
+    r = ask(a, SHOES)
+    assert (r.status, r.reply) == ("error", ERROR_REPLY) and "fallback.test" not in router.hosts
+
+
+# --- the review's editor: tolerant parsing of its structured reply (measured failure on Cloudflare) --------------
+
+@pytest.mark.parametrize("editor_text, repair", [
+    ("Here is my verdict: I approve the draft.", "fallback"),  # no JSON at all: crashed the review before
+    ('```json\n{"approved": true, "final_answer": "ok", "reason": "fine"}\n```', "extracted"),
+])
+def test_an_unreadable_editor_reply_never_crashes_or_removes_verified_quotes(assistant, collections, editor_text,
+                                                                          repair):
+    from app.review.autogen_review import EDITOR_UNREADABLE
+
+    a, (s1, s2) = two_claim_assistant(assistant, collections, editor=completion(editor_text))
+    r = ask(a, SHOES)
+    assert r.status == "answered" and s1 in r.reply and s2 in r.reply  # both verified quotes kept
+    assert a.last_review.verdict.approved
+    if repair == "fallback":
+        assert a.last_review.editor_verdict.reason == EDITOR_UNREADABLE
+    else:
+        assert a.last_review.editor_verdict.final_answer == "ok"  # recorded only; never used for the reply

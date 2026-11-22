@@ -19,14 +19,22 @@ MOCK_LLM=true (the default) forces the mock provider whatever LLM_PROVIDER says.
                      and retries would multiply the wait), 2 otherwise (the OpenAI SDK's backoff: 429, 408, 409,
                      5xx, connection errors; honours Retry-After)
   LLM_MAX_TOKENS     default 1024 (completion cap per call; also part of each call's budget reservation)
+Failover (optional, openai_compatible): when LLM_FALLBACK_BASE_URL is set, a request that fails with a provider error
+on the provider above is run once more, from the start, on this one (app.pipeline). Order = which is primary.
+  LLM_FALLBACK_BASE_URL, LLM_FALLBACK_MODEL, LLM_FALLBACK_API_KEY_ENV (or LLM_FALLBACK_API_KEY),
+  LLM_FALLBACK_REASONING_EFFORT (default: LLM_REASONING_EFFORT). Temperature, timeout, retries and max tokens
+  are shared.
 """
 
 from __future__ import annotations
 
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, field_validator
 
@@ -45,6 +53,8 @@ OLLAMA_DEFAULT_URL = "http://127.0.0.1:11434"
 OLLAMA_DEFAULT_MODEL = "qwen3:4b-instruct-2507-q4_K_M"
 # Ollama ignores the key, but the OpenAI SDK needs one; an explicit value also stops it reading OPENAI_API_KEY.
 _PLACEHOLDER_KEY = "not-set"
+# Failover: the settings one request attempt runs on. A context variable, so simultaneous requests never mix them.
+_ACTIVE: ContextVar[LLMSettings | None] = ContextVar("active_llm_settings", default=None)
 
 
 class LLMSettings(BaseModel):
@@ -71,9 +81,44 @@ class LLMSettings(BaseModel):
     def is_real(self) -> bool:
         return self.provider != "mock"
 
+    @property
+    def label(self) -> str:
+        """Who answered, for the chat UI: the host for a hosted provider (never the path: it can hold an account ID)."""
+        if self.provider != "openai_compatible":
+            return self.provider
+        return urlsplit(self.base_url).hostname or self.provider
+
+
+@contextmanager
+def using_llm_settings(settings: LLMSettings) -> Iterator[None]:
+    """Every load_llm_settings() inside (crew, generator, review) returns `settings`: one failover attempt."""
+    token = _ACTIVE.set(settings)
+    try:
+        yield
+    finally:
+        _ACTIVE.reset(token)
+
+
+def load_fallback_settings(env: Mapping[str, str] | None = None, mock: bool | None = None) -> LLMSettings | None:
+    """The failover provider (LLM_FALLBACK_*), or None when none is set or the mock is on."""
+    env = os.environ if env is None else env
+    if not env.get("LLM_FALLBACK_BASE_URL", "").strip():
+        return None
+    fallback = {**env, "LLM_PROVIDER": "openai_compatible", "LLM_BASE_URL": env["LLM_FALLBACK_BASE_URL"],
+                "LLM_MODEL": env.get("LLM_FALLBACK_MODEL", ""), "LLM_API_KEY": env.get("LLM_FALLBACK_API_KEY", ""),
+                "LLM_API_KEY_ENV": env.get("LLM_FALLBACK_API_KEY_ENV", ""),
+                "LLM_REASONING_EFFORT": env.get("LLM_FALLBACK_REASONING_EFFORT", env.get("LLM_REASONING_EFFORT", ""))}
+    try:
+        settings = load_llm_settings(fallback, mock)
+    except LLMConfigError as exc:
+        raise LLMConfigError(f"Failover provider (LLM_FALLBACK_*): {exc}") from None
+    return settings if settings.is_real else None
+
 
 def load_llm_settings(env: Mapping[str, str] | None = None, mock: bool | None = None) -> LLMSettings:
     """Build validated settings. `mock` defaults to app.core.config.MOCK_LLM (tests patch that constant)."""
+    if env is None and (active := _ACTIVE.get()) is not None:
+        return active  # inside a failover attempt
     env = os.environ if env is None else env
     mock = config.MOCK_LLM if mock is None else mock
     provider = env.get("LLM_PROVIDER", "mock").strip().lower() or "mock"

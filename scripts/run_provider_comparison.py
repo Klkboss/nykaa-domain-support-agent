@@ -90,18 +90,21 @@ class WireLog:
     (it can hold an account ID), the request, or any header that could carry a key.
     """
 
-    def __init__(self, host: str) -> None:
-        self.host = host
+    def __init__(self, *hosts: str) -> None:
+        self.hosts = set(hosts)  # the primary provider and, with failover, the fallback
         self.records: list[dict[str, Any]] = []
+        # Failover demonstration only: a synthetic 429 for this host, returned without sending anything.
+        self.force_429 = os.environ.get("EVAL_FORCE_429_HOST", "")
 
     def take(self) -> list[dict[str, Any]]:
         out, self.records = self.records, []
         return out
 
     def observe(self, request: Any, response: Any) -> None:
-        if request.url.host != self.host:
+        if request.url.host not in self.hosts:
             return
-        rec: dict[str, Any] = {"status": response.status_code,
+        rec: dict[str, Any] = {"host": request.url.host, "status": response.status_code,
+                               "simulated": request.url.host == self.force_429,
                                "rate_limit": {k: v for k, v in response.headers.items()
                                               if k.lower().startswith(("x-ratelimit", "retry-after"))}}
         try:
@@ -125,12 +128,24 @@ class WireLog:
         sync_send, async_send = httpx.Client.send, httpx.AsyncClient.send
         log = self
 
+        def simulated(request: Any) -> Any:
+            return httpx.Response(429, headers={"retry-after": "0"}, request=request,
+                                  json={"error": {"message": "simulated rate limit (EVAL_FORCE_429_HOST)"}})
+
         def send(client: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
+            if request.url.host == log.force_429:
+                response = simulated(request)
+                log.observe(request, response)
+                return response
             response = sync_send(client, request, *args, **kwargs)
             log.observe(request, response)
             return response
 
         async def asend(client: Any, request: Any, *args: Any, **kwargs: Any) -> Any:
+            if request.url.host == log.force_429:
+                response = simulated(request)
+                log.observe(request, response)
+                return response
             response = await async_send(client, request, *args, **kwargs)
             log.observe(request, response)
             return response
@@ -148,7 +163,12 @@ def wire_summary(records: list[dict[str, Any]]) -> dict[str, Any]:
         values = [u[key] for u in usage if u.get(key) is not None]
         return round(sum(values), 2) if values else None
 
+    by_host: dict[str, dict[str, int]] = {}
+    for r in records:
+        counts = by_host.setdefault(r["host"], {})
+        counts[str(r["status"])] = counts.get(str(r["status"]), 0) + 1
     return {"http_requests": len(records), "http_statuses": statuses, "rate_limit_hits": statuses.get("429", 0),
+            "http_by_host": by_host, "simulated_429s": sum(1 for r in records if r["simulated"]),
             "provider_tokens": total("total"), "prompt_tokens": total("prompt"),
             "completion_tokens": total("completion"), "reasoning_tokens": total("reasoning"),
             "neurons": total("neurons"), "last_rate_limit_headers": next(
@@ -164,6 +184,12 @@ def environment(provider: str, settings: Any) -> dict[str, Any]:
         return {**env, "base_url": os.environ.get("LLM_BASE_URL", ""), "start_at_or_below_c": None,
                 "max_attempts": 1, "reasoning_effort": settings.reasoning_effort, "pace_s": PACE_S,
                 "key_variable": os.environ.get("LLM_API_KEY_ENV", "LLM_API_KEY"), "max_tokens": settings.max_tokens,
+                "max_retries": settings.max_retries,
+                "fallback": {"base_url": os.environ.get("LLM_FALLBACK_BASE_URL", ""),
+                             "model": os.environ.get("LLM_FALLBACK_MODEL", ""),
+                             "key_variable": os.environ.get("LLM_FALLBACK_API_KEY_ENV", "")}
+                if os.environ.get("LLM_FALLBACK_BASE_URL") else None,
+                "simulated_429_host": os.environ.get("EVAL_FORCE_429_HOST") or None,
                 "measured_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     if provider != "mock":
         with urllib.request.urlopen(settings.base_url.removesuffix("/v1") + "/api/version", timeout=10) as r:
@@ -216,7 +242,7 @@ def measure(provider: str, label: str | None = None, demo_only: bool = False) ->
     """`label` names a hosted run's output file; `demo_only` (hosted screening) runs only the six demo questions."""
     from app.core.cache import GenerationCache
     from app.db import database_url
-    from app.pipeline import SupportAssistant
+    from app.pipeline import RequestTrace, SupportAssistant
     from app.tools.crew_tools import RagLookupTool
 
     assert database_url() is None, "unset DATABASE_URL: every evaluation session must start empty, in memory"
@@ -233,7 +259,8 @@ def measure(provider: str, label: str | None = None, demo_only: bool = False) ->
         f"settings say {settings.provider!r}; set MOCK_LLM/LLM_PROVIDER for {provider}")
     real = settings.provider == "ollama"  # the local GPU: thermal rule and re-runs apply
     hosted = settings.provider == "openai_compatible"
-    wire = WireLog(__import__("httpx").URL(settings.base_url).host) if hosted else None
+    fallback = assistant.fallback_settings
+    wire = WireLog(*(s.label for s in (settings, fallback) if s)) if hosted else None
     if wire:
         from app.rag.retrieval import search
         from app.tools.crew_tools import default_policy_collection
@@ -302,15 +329,19 @@ def measure(provider: str, label: str | None = None, demo_only: bool = False) ->
         extra[q["id"]] = timing(attempts)
     demo_rows = []
     for i, (kind, question, expected) in enumerate(DEMO, 1):
-        def run_demo(attempt: int, i: int = i, question: str = question) -> tuple[Any, str]:
-            response = assistant.ask(f"demo-{i}-a{attempt}", question)
+        trace = RequestTrace()
+
+        def run_demo(attempt: int, i: int = i, question: str = question, trace: Any = trace) -> tuple[Any, str]:
+            response = assistant.ask(f"demo-{i}-a{attempt}", question, trace)
             return response, response.status
 
         response, attempts = attempts_for(f"D{i}", run_demo)
         checks = demo_checks(response, expected)
         demo_rows.append({"id": f"D{i}", "kind": kind, "question": question, "status": response.status,
                           "reply": response.reply, "expected": expected, "checks": checks,
-                          "passed": all(checks.values()), **timing(attempts)})
+                          "passed": all(checks.values()), "answered_by": trace.settings.label if trace.settings
+                          else None, "model_used": trace.settings.model if trace.settings else None,
+                          "failover": trace.failover, **timing(attempts)})
     scored = {v: score(cases, v) for v in ("v1", "v3")} if cases else {}
     rows = []
     for r1, r3 in zip(*(scored[v]["results"] for v in ("v1", "v3")), strict=True) if scored else ():
@@ -629,6 +660,28 @@ def hosted_report() -> None:
             if not r["passed"]:
                 lines.append(f"\nDemo {r['id']} ({r['kind']}) failed {[k for k, v in r['checks'].items() if not v]}: "
                              f"{r['reply']}")
+    runs = [(title, run) for title, name in (
+        ("Failover enabled, real providers (Groq primary, Cloudflare fallback)", "failover-groq-cloudflare"),
+        ("Forced failover: every Groq request answered with a simulated 429 (EVAL_FORCE_429_HOST, nothing sent)",
+         "failover-forced-groq-429")) if (run := _load(f"hosted_screen_{name}"))]
+    if runs:
+        lines += ["", "## Failover: the six demo questions", "",
+                  "`LLM_MAX_RETRIES=0`, so a provider error reaches the failover after CrewAI's own three attempts. "
+                  "**Answered by** is the provider the pipeline reports for the reply "
+                  "(the chat UI shows the same).", ""]
+    for title, run in runs:
+        demo = run["demo"]
+        lines += [f"### {title}: {sum(r['passed'] for r in demo)}/6 passed", "",
+                  "| ID | Status | Passed | Answered by | Failover | Latency s | HTTP responses by host | "
+                  "Neurons |", "|---|---|---|---|---|---|---|---|"]
+        for r in demo:
+            x = r["measured"]
+            hosts = "; ".join(f"{h}: " + ", ".join(f"{n}× {c}" for c, n in sorted(s.items()))
+                              for h, s in x.get("http_by_host", {}).items()) or "none (no model call)"
+            lines.append(f"| {r['id']} | {r['status']} | {'yes' if r['passed'] else '**NO**'} | "
+                         f"{r.get('answered_by') or 'n/a'} | {'yes' if r.get('failover') else 'no'} | "
+                         f"{x['latency_s']:.2f} | {hosts} | {_fmt(x.get('neurons'), 1)} |")
+        lines.append("")
     lines += ["", "## Free-tier capacity per question", "",
               "Questions per minute and per day that the free tier allows, from the measured use per question "
               "(means over questions that called the model, phase 2 where run, else phase 1).", "",

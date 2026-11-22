@@ -63,6 +63,7 @@ REAL_EDITOR_SYSTEM = (
     "final_answer=the draft unchanged. Otherwise: approved=false, final_answer=the draft with the flagged sentences "
     "removed (keep every other sentence exactly as written; never add or reword text), and reason=what was removed."
 )
+EDITOR_UNREADABLE = "The editor's reply could not be read; it is not used on real models."
 RealClients = tuple[MeteredChatCompletionClient, MeteredChatCompletionClient]
 
 
@@ -216,7 +217,10 @@ def _code_verdict(text: str, context: str, messages: list) -> tuple[Verdict, Rev
 
 def _review_with_real_model(text: str, context: str, budget: RequestBudget | None,
                             settings: LLMSettings) -> ReviewResult:
-    clients = (build_review_client(settings, budget), build_review_client(settings, budget))
+    # The editor's verdict never decides the reply on a real model (options B/B+: code reads the reviewer's flags), so
+    # an unreadable editor reply becomes this value instead of failing the request; it can remove nothing.
+    unreadable = Verdict(approved=False, final_answer="", reason=EDITOR_UNREADABLE)
+    clients = (build_review_client(settings, budget), build_review_client(settings, budget, fallback=unreadable))
     before = budget.used if budget is not None else 0
 
     async def review_then_close() -> tuple[Verdict, list]:

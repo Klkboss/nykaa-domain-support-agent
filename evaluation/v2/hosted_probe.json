@@ -2,7 +2,6 @@
   "github-models-gpt-4.1": {
     "base_url": "https://models.github.ai/inference",
     "model": "openai/gpt-4.1",
-    "key_variable": "GITHUB_MODELS_TOKEN",
     "reasoning_effort": null,
     "model_listed": "HTTP 200, not JSON (text/plain)",
     "related_models": [],

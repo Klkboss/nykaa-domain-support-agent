@@ -72,7 +72,8 @@ class Explanation(BaseModel):
     review: Literal["approved", "revised", "not_run"]
     escalation_recommended: bool | None  # None: no order was looked up
     injection_categories: list[str]
-    provider: str
+    provider: str  # mock, ollama, or the hosted provider's host (e.g. api.groq.com): who actually answered
     model: str
+    failover: bool = False  # v2: the primary provider failed and the fallback (provider above) was used
     latency_ms: float
     tokens: int  # charged to this request's token budget (estimates for the mock, reported usage for real models)

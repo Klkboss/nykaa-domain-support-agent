@@ -21,7 +21,7 @@ RUN python scripts/download_model.py
 FROM python:3.12-slim-bookworm AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH MOCK_LLM=true
 # A deployed image is a public demo: per-client question limits are ON (0 turns one off; see app/api/rate_limit.py).
-ENV RATE_LIMIT_PER_MINUTE=6 RATE_LIMIT_PER_DAY=100
+ENV RATE_LIMIT_PER_MINUTE=3 RATE_LIMIT_PER_DAY=15 RATE_LIMIT_SITE_PER_DAY=70
 RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 COPY --from=build /opt/venv /opt/venv

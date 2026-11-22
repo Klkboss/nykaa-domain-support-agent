@@ -104,3 +104,21 @@ def test_reasoning_effort_is_optional_and_validated():
     assert load_llm_settings({**base, "LLM_REASONING_EFFORT": "Low"}, mock=False).reasoning_effort == "low"
     with pytest.raises(LLMConfigError, match="LLM_REASONING_EFFORT"):
         load_llm_settings({**base, "LLM_REASONING_EFFORT": "max"}, mock=False)
+
+
+def test_the_failover_provider_has_its_own_url_model_and_key():
+    from app.llm.settings import load_fallback_settings
+
+    env = {**HOSTED, "LLM_BASE_URL": "https://api.groq.com/openai/v1", "LLM_API_KEY_ENV": "GROQ_API_KEY",
+           "GROQ_API_KEY": "gsk-1", "LLM_REASONING_EFFORT": "low",
+           "LLM_FALLBACK_BASE_URL": "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+           "CLOUDFLARE_ACCOUNT_ID": "acc1", "LLM_FALLBACK_MODEL": "@cf/openai/gpt-oss-120b",
+           "LLM_FALLBACK_API_KEY_ENV": "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_API_TOKEN": "cf-1"}
+    f = load_fallback_settings(env, mock=False)
+    assert (f.label, f.model, f.reasoning_effort) == ("api.cloudflare.com", "@cf/openai/gpt-oss-120b", "low")
+    assert f.api_key.get_secret_value() == "cf-1"  # never the primary's key
+    assert load_llm_settings(env, mock=False).label == "api.groq.com"
+    assert load_fallback_settings({**env, "LLM_FALLBACK_BASE_URL": ""}, mock=False) is None
+    assert load_fallback_settings(env, mock=True) is None  # the mock never fails over
+    with pytest.raises(LLMConfigError, match="LLM_FALLBACK.*CLOUDFLARE_API_TOKEN, which is not set"):
+        load_fallback_settings({**env, "CLOUDFLARE_API_TOKEN": ""}, mock=False)

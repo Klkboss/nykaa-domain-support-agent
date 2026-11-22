@@ -133,7 +133,7 @@ def test_the_page_never_inserts_server_text_as_html():
 def test_health_reports_the_provider_and_storage_without_secrets(web):
     body = web.get("/health").json()
     assert body == {"status": "ok", "provider": "mock", "model": "deterministic mock", "database": "in-memory",
-                    "rate_limit": {"per_minute": 0, "per_day": 0}}
+                    "rate_limit": {"per_minute": 0, "per_day": 0, "site_per_day": 0}}
 
 
 # --- rate limit -------------------------------------------------------------------------------------------------
@@ -209,3 +209,36 @@ def test_every_text_colour_meets_wcag_aa_on_every_background_it_is_used_on(theme
     pairs += [("fg", "accent-soft"), ("on-accent", "accent")]
     failing = {f"{fg} on {bg}": round(_contrast(t[fg], t[bg]), 2) for fg, bg in pairs if _contrast(t[fg], t[bg]) < 4.5}
     assert not failing, failing
+
+
+def test_the_site_wide_daily_cap_counts_every_client_and_resets_next_day():
+    clock = Clock()
+    limiter = RateLimiter(per_minute=3, per_day=15, clock=clock, site_per_day=2)
+    assert limiter.check("a") is None and limiter.check("b") is None
+    retry, why = limiter.check_why("c")  # a new visitor, but the site has used today's questions
+    assert why == "site" and retry == pytest.approx(DAY_S - (clock.now % DAY_S))
+    clock.now += DAY_S
+    assert limiter.check("c") is None
+
+
+def test_the_site_cap_reply_says_the_demo_is_full_for_today(tmp_path):
+    with TestClient(create_app(log_path=tmp_path / "r.jsonl", rate_limiter=RateLimiter(site_per_day=1))) as c:
+        assert c.post("/ask", json={"question": "How long do I have to return shoes?"}).status_code == 200
+        second = c.post("/ask", json={"question": "And for apparel?"})
+    assert second.status_code == 429 and "daily question limit" in second.json()["error"]["message"]
+
+
+def test_the_explanation_names_the_provider_that_answered():
+    from app.api.main import _explain
+    from app.llm.settings import LLMSettings
+    from app.pipeline import RequestTrace
+    from app.schemas import GuardrailReport, SupportResponse
+
+    primary = LLMSettings(provider="openai_compatible", base_url="https://api.groq.com/openai/v1", model="gpt-oss")
+    fallback = LLMSettings(provider="openai_compatible", model="@cf/gpt-oss",
+                           base_url="https://api.cloudflare.com/client/v4/accounts/ACCOUNT123/ai/v1")
+    result = SupportResponse(session_id="s", status="answered", reply="x", masked_question="q",
+                             guardrails=GuardrailReport())
+    x = _explain(result, RequestTrace(settings=fallback, failover=True), primary, 1.0)
+    assert (x.provider, x.model, x.failover) == ("api.cloudflare.com", "@cf/gpt-oss", True)
+    assert "ACCOUNT123" not in x.model_dump_json()  # the host only, never the path with the account ID

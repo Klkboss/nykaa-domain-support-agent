@@ -108,13 +108,15 @@ All are optional; `.env.example` lists them with comments. `.env` is never loade
 | `LLM_API_KEY` | none | only for servers that need one; never committed |
 | `LLM_API_KEY_ENV` | none | the NAME of the variable holding the key (e.g. `GROQ_API_KEY`); wins over `LLM_API_KEY` |
 | `LLM_REASONING_EFFORT` | not sent | `none`/`minimal`/`low`/`medium`/`high` for reasoning models (gpt-oss, Gemini) |
+| `LLM_FALLBACK_BASE_URL`, `LLM_FALLBACK_MODEL`, `LLM_FALLBACK_API_KEY_ENV`, `LLM_FALLBACK_REASONING_EFFORT` | none (no failover) | the failover provider: a request that fails with a provider error is run once more on it |
 | `LLM_TEMPERATURE`, `LLM_TIMEOUT_S`, `LLM_MAX_TOKENS` | `0`, `120`, `1024` | generation controls |
 | `LLM_MAX_RETRIES` | `0` for Ollama, `2` otherwise | transport retries (low, so a stopped server fails fast) |
 | `DATABASE_URL` | none (in-memory) | PostgreSQL URL; `postgres://` and `postgresql://` both work |
 | `TEST_DATABASE_URL` | none | only for `tests_v2/test_v2_postgres.py`, which **drops** the schema |
 | `POSTGRES_PASSWORD` | none | required by `docker-compose.yml` |
 | `DOCKER_OLLAMA_BASE_URL` | host Ollama | where the API container finds Ollama |
-| `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_PER_DAY` | off (image: `6`, `100`) | questions per client IP |
+| `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_PER_DAY` | off (image: `3`, `15`) | questions per client IP |
+| `RATE_LIMIT_SITE_PER_DAY` | off (image: `70`) | questions from all clients per UTC day (keeps a hosted free tier in quota) |
 | `JUDGE_PROVIDER` | `mock` | `llm` scores evaluations with the configured real model |
 
 ### Database and migrations
@@ -272,13 +274,13 @@ that throttle time.
 ### Hosted free-tier providers (for a future online demo)
 Measured through the same `openai_compatible` provider, free tiers only, in
 [evaluation/V2_HOSTED_PROVIDERS.md](evaluation/V2_HOSTED_PROVIDERS.md): six demo questions on every candidate, then
-the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` throughout. One run each.
+the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` throughout. One run each, measured before the editor-reply fix below (the cause of Cloudflare's one error, E08).
 
 | Provider and model | Accuracy | Grounding | Completeness | Safety | Demo | Latency s, median / max | Free questions per day |
 |---|---|---|---|---|---|---|---|
-| **Cloudflare `@cf/openai/gpt-oss-120b`** (recommended) | **4.73** | 5.00 | 4.73 | 5.00 | **6/6** | 16.80 / 22.35 | ~99 (10,000 Neurons/day; ~101 per question) |
-| Groq `openai/gpt-oss-120b` (1st fallback) | 4.33 | 5.00 | 5.00 | 5.00 | **6/6** | 7.02 / 10.03 | ~62 (200,000 tokens/day), ~2.5 per minute |
-| Groq `openai/gpt-oss-20b` (2nd fallback) | 4.60 | 5.00 | 5.00 | 5.00 | 5/6 | 6.02 / 7.63 | ~65 |
+| **Cloudflare `@cf/openai/gpt-oss-120b`** (demo fallback) | **4.73** | 5.00 | 4.73 | 5.00 | **6/6** | 16.80 / 22.35 | ~99 (10,000 Neurons/day; ~101 per question) |
+| Groq `openai/gpt-oss-120b` (demo primary) | 4.33 | 5.00 | 5.00 | 5.00 | **6/6** | 7.02 / 10.03 | ~62 (200,000 tokens/day), ~2.5 per minute |
+| Groq `openai/gpt-oss-20b` | 4.60 | 5.00 | 5.00 | 5.00 | 5/6 | 6.02 / 7.63 | ~65 |
 | qwen3:4b on Ollama (local baseline) | 4.60 | 5.00 | 5.00 | 5.00 | 5/6 | 8.28 / 12.42 | local GPU |
 
 - **Not suitable:**
@@ -290,11 +292,27 @@ the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` thr
 - **Reasoning text stays out of the answer:** reasoning models return it in a separate field, and only the final
   answer enters the pipeline. A fix in this run stops AutoGen's "thought" messages being read as reviewer flags.
 - **Keys:** read from `.env` by variable name, never logged or written to reports. Tests use none.
-- **Before going public:** a site-wide daily cap and a "busy, please retry" reply are still to be built. See the
-  report's demo-mode section for these and the Azure for Students hosting notes.
+
+**Online demo setup (owner decision): Groq first, Cloudflare on failover.**
+- **Failover:** a request that fails with a provider error (rate limit, outage, timeout, HTTP error) is run again
+  from the start on the fallback (`LLM_FALLBACK_*`; `.env.example` has the full block). If neither can answer, the
+  visitor gets "The assistant is busy right now. Please try again in a minute." Other failures keep the generic
+  reply and are not retried.
+- **The provider that answered** is shown in "How this answer was made", marked "fallback" after a failover.
+- **Measured on the six demo questions:**
+  - With both providers healthy: 6/6, all answered by Groq in 5.7–9.1 s.
+  - With every Groq request forced to a simulated 429: 6/6, all answered by Cloudflare in 11.4–22.8 s.
+- **The review's editor reply is now read tolerantly.** An unreadable reply becomes a safe verdict that removes
+  nothing, which fixes the Cloudflare failures (E08 and two gpt-oss-20b demo questions).
+- **Demo-mode limits** (Docker image defaults):
+  - 3 questions a minute and 15 a day per visitor.
+  - **70 a day for the whole site** (`RATE_LIMIT_SITE_PER_DAY`): Cloudflare's 10,000 free Neurons / the most
+    expensive measured question.
+- Details, free-tier terms and the Azure for Students hosting notes:
+  [evaluation/V2_HOSTED_PROVIDERS.md](evaluation/V2_HOSTED_PROVIDERS.md).
 
 ### Tests and CI
-- **800 tests:** the capstone's **664 are unchanged**, plus 136 v2 tests. They run offline with outbound network
+- **809 tests:** the capstone's **664 are unchanged**, plus 145 v2 tests. They run offline with outbound network
   blocked.
   - The 5 PostgreSQL tests run only with `TEST_DATABASE_URL`, and in CI against a service container.
   - `tests_live/` (4 smoke tests against a real Ollama) runs only with `LIVE_LLM=1`.

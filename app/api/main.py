@@ -67,9 +67,15 @@ def _error(trace_id: str, code: int, kind: str, message: str, details: list[dict
     return JSONResponse(body.model_dump(), status_code=code, headers={"X-Trace-Id": trace_id})
 
 
-def _rate_limited(trace_id: str, retry_after: float) -> JSONResponse:
+def _limit_message(retry_after: float, why: str) -> str:
+    if why == "site":
+        return "The demo has reached its daily question limit. Please come back tomorrow."
+    return f"Too many questions. Please try again in {math.ceil(retry_after)} s."
+
+
+def _rate_limited(trace_id: str, retry_after: float, why: str = "client") -> JSONResponse:
     seconds = math.ceil(retry_after)
-    response = _error(trace_id, 429, RATE_LIMITED, f"Too many questions. Please try again in {seconds} s.")
+    response = _error(trace_id, 429, RATE_LIMITED, _limit_message(retry_after, why))
     response.headers["Retry-After"] = str(seconds)
     return response
 
@@ -90,8 +96,9 @@ def _explain(result: SupportResponse, trace: RequestTrace, settings: LLMSettings
         else "approved",
         escalation_recommended=draft.order.escalation_recommended if draft and draft.order else None,
         injection_categories=result.guardrails.injection_categories,
-        provider=settings.provider,
-        model=settings.model if settings.is_real else "deterministic mock",
+        provider=(trace.settings or settings).label,  # v2: the provider that answered (the fallback after a failover)
+        model=(trace.settings or settings).model if settings.is_real else "deterministic mock",
+        failover=trace.failover,
         latency_ms=latency_ms,
         tokens=trace.budget.used if trace.budget else 0,
     )
@@ -154,14 +161,15 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None,
         return {"status": "ok", "provider": settings.provider,
                 "model": settings.model if settings.is_real else "deterministic mock",
                 "database": "postgresql" if database_url() else "in-memory",
-                "rate_limit": {"per_minute": limiter.per_minute, "per_day": limiter.per_day}}
+                "rate_limit": {"per_minute": limiter.per_minute, "per_day": limiter.per_day,
+                               "site_per_day": limiter.site_per_day}}
 
     @app.post("/ask", response_model=AskResponse, responses={429: {"model": ErrorResponse}})
     async def ask(body: AskRequest, request: Request) -> AskResponse | JSONResponse:
-        retry_after = limiter.check(request.client.host if request.client else "unknown")
-        if retry_after is not None:
+        limited = limiter.check_why(request.client.host if request.client else "unknown")
+        if limited is not None:
             request.state.log.update(error_type=RATE_LIMITED)
-            return _rate_limited(request.state.trace_id, retry_after)
+            return _rate_limited(request.state.trace_id, *limited)
         session_id = body.session_id or f"s-{request.state.trace_id[:12]}"
         new_session = not has_session(session_id)
         result = await run_in_threadpool(request.app.state.assistant.ask, session_id, body.question)
@@ -217,11 +225,10 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None,
                                connection_id=connection_id, session_id=session_id, outcome="client_error",
                                error_type="validation_error", duration_ms=round((time.perf_counter() - start) * 1000, 2))
                     continue
-                retry_after = limiter.check(client)
-                if retry_after is not None:
+                limited = limiter.check_why(client)
+                if limited is not None:
                     await websocket.send_json(ErrorResponse(trace_id=trace_id, error=ErrorBody(
-                        type=RATE_LIMITED, message=f"Too many questions. Please try again in "
-                                                   f"{math.ceil(retry_after)} s.")).model_dump())
+                        type=RATE_LIMITED, message=_limit_message(*limited))).model_dump())
                     logger.log(type="websocket", event="message", endpoint="/ws/chat", trace_id=trace_id,
                                connection_id=connection_id, session_id=session_id, outcome="client_error",
                                error_type=RATE_LIMITED, duration_ms=round((time.perf_counter() - start) * 1000, 2))

@@ -142,7 +142,7 @@ function explanation(x) {
     not_run: "not run" }[x.review]);
   row(dl, "Escalation", x.escalation_recommended === null ? "no order looked up"
     : x.escalation_recommended ? "flagged for escalation" : "not needed");
-  row(dl, "Model", `${x.provider} · ${x.model}`);
+  row(dl, "Model", `${x.provider} · ${x.model}${x.failover ? " (fallback: the primary provider was busy)" : ""}`);
   row(dl, "Latency", `${(x.latency_ms / 1000).toFixed(1)} s`);
   row(dl, "Tokens", `${x.tokens.toLocaleString("en-IN")} (charged to the request budget)`);
   details.append(dl);

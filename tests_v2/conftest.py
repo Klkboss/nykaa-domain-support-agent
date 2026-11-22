@@ -64,7 +64,9 @@ def no_network_attempts_v2():
 def no_ambient_llm_settings(monkeypatch):
     """A developer's shell LLM_* / JUDGE_PROVIDER values must never leak into a test."""
     for name in (*REAL_ENV, "LLM_API_KEY", "LLM_API_KEY_ENV", "LLM_REASONING_EFFORT", "OLLAMA_BASE_URL",
-                 "LLM_TEMPERATURE", "LLM_TIMEOUT_S", "LLM_MAX_TOKENS",
+                 "LLM_TEMPERATURE", "LLM_TIMEOUT_S", "LLM_MAX_TOKENS", "LLM_FALLBACK_BASE_URL", "LLM_FALLBACK_MODEL",
+                 "LLM_FALLBACK_API_KEY", "LLM_FALLBACK_API_KEY_ENV", "LLM_FALLBACK_REASONING_EFFORT",
+                 "RATE_LIMIT_SITE_PER_DAY",
                  "JUDGE_PROVIDER", "DATABASE_URL"):
         monkeypatch.delenv(name, raising=False)
 
@@ -86,7 +88,7 @@ def real_provider(monkeypatch):
         monkeypatch.setattr(crew_module, "build_crew_llm",
                             lambda s, b=None, **kw: crew_build(s, b, http_client=fake.sync_client(), **kw))
         monkeypatch.setattr(review_module, "build_review_client",
-                            lambda s, b=None: review_build(s, b, http_client=fake.async_client()))
+                            lambda s, b=None, **kw: review_build(s, b, http_client=fake.async_client(), **kw))
         return fake
 
     return route

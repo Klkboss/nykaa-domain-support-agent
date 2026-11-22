@@ -34,7 +34,7 @@ from app.guardrails.groundedness import check_draft
 from app.guardrails.injection import BLOCKED_REPLY, detect_injection
 from app.guardrails.pii import mask_pii
 from app.llm.errors import classify
-from app.llm.settings import load_llm_settings
+from app.llm.settings import LLMSettings, load_fallback_settings, load_llm_settings, using_llm_settings
 from app.memory.session_memory import get_session_history, has_session, with_session_memory
 from app.rag.documents import split_sentences
 from app.rag.generation import FALLBACK_ANSWER
@@ -44,6 +44,8 @@ from app.tools.crew_tools import RagLookupTool
 
 MAX_HISTORY_MESSAGES = 10  # assumption: last 5 exchanges is enough context and bounds prompt size
 ERROR_REPLY = "Sorry, I couldn't prepare a reliable answer just now. Please try again or contact support."
+# v2: every configured model provider failed (rate limit, outage, timeout): nothing is wrong with the question.
+BUSY_REPLY = "The assistant is busy right now. Please try again in a minute."
 BUDGET_REPLY = ("This request is too large to process within the per-request budget. "
                 "Please shorten it or split it into smaller questions.")
 # v2 chat UI: the stages a request reports while it runs, in order ("order" only when the order tool is called).
@@ -59,6 +61,8 @@ class RequestTrace:
     crew_run: CrewRun | None = None
     review: ReviewResult | None = None
     budget: RequestBudget | None = None
+    settings: LLMSettings | None = None  # the provider that made this answer (the fallback after a failover)
+    failover: bool = False  # the primary provider failed and the fallback answered (or failed too)
 
     def step(self, name: str) -> None:
         if self.on_step:
@@ -85,6 +89,12 @@ def _failure_kind(error: BaseException) -> str:
                 type(error).__name__)
 
 
+def _provider_failed(result: dict[str, Any]) -> bool:
+    """The attempt ended because a model provider failed (the typed provider labels from _failure_kind)."""
+    response = result["response"]
+    return response.status == "error" and any(": provider_" in c for c in response.guardrails.rejected_claims)
+
+
 def _status(draft: SupportDraft, reply: str) -> str:
     if reply == FALLBACK_ANSWER:
         return "fallback"
@@ -100,6 +110,7 @@ class SupportAssistant:
                  max_request_tokens: int | None = None, generation_cache: GenerationCache | None = None) -> None:
         # v2: provider settings are validated once, at startup (a bad LLM_* value fails here with a clear error).
         self.llm_settings = load_llm_settings()
+        self.fallback_settings = load_fallback_settings()  # v2 failover (None unless LLM_FALLBACK_* is set)
         self._rag_tool_factory = rag_tool_factory
         self._composer_llm_factory = composer_llm_factory
         default_cap = MAX_REQUEST_TOKENS_REAL if self.llm_settings.is_real else MAX_REQUEST_TOKENS
@@ -132,8 +143,25 @@ class SupportAssistant:
         return out["response"].model_copy(update={"session_id": session_id})
 
     def _answer(self, inputs: dict[str, Any]) -> dict[str, Any]:
+        """v2 failover: a request that fails with a provider error (rate limit, outage, timeout, HTTP error) is run
+        again from the start on the fallback provider. If no provider could answer, the reply says the assistant is
+        busy. Any other failure (an invalid draft, for example) is not retried and keeps the generic reply."""
+        trace = inputs["trace"]
+        result = self._attempt(inputs, self.llm_settings)
+        if self.fallback_settings is not None and _provider_failed(result):
+            trace.failover = True
+            with using_llm_settings(self.fallback_settings):
+                result = self._attempt(inputs, self.fallback_settings)
+        if _provider_failed(result):
+            busy = result["response"].model_copy(update={"reply": BUSY_REPLY})
+            return {"answer": BUSY_REPLY, "response": busy}
+        return result
+
+    def _attempt(self, inputs: dict[str, Any], settings: LLMSettings) -> dict[str, Any]:
         question, report, trace = inputs["question"], inputs["report"], inputs["trace"]
-        budget = self.last_budget = trace.budget = RequestBudget(self.max_request_tokens)  # fresh per request
+        trace.settings, trace.crew_run, trace.review = settings, None, None
+        # A fresh budget per request, and per failover attempt: each provider attempt gets the same cap.
+        budget = self.last_budget = trace.budget = RequestBudget(self.max_request_tokens)
         composer_llm = self._composer_llm_factory(budget=budget) if self._composer_llm_factory else None
         rag_tool = self._rag_tool_factory()
         rag_tool.budget = budget  # the grounded-generation call is a model call too
