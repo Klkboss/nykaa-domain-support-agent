@@ -28,15 +28,15 @@ def test_default_follows_the_capstone_switch(monkeypatch):
 def test_ollama_defaults():
     s = load_llm_settings({"LLM_PROVIDER": "ollama"}, mock=False)
     assert (s.provider, s.model, s.base_url) == ("ollama", OLLAMA_DEFAULT_MODEL, "http://localhost:11434/v1")
-    assert (s.temperature, s.max_retries) == (0.0, 2)
+    assert (s.temperature, s.max_retries) == (0.0, 0)  # local: failures must not multiply
 
 
 def test_ollama_overrides():
     s = load_llm_settings({"LLM_PROVIDER": "Ollama", "OLLAMA_BASE_URL": "http://gpu-box:11434/",
                            "LLM_MODEL": "qwen2.5:3b-instruct", "LLM_TEMPERATURE": "0.2", "LLM_TIMEOUT_S": "30",
-                           "LLM_MAX_RETRIES": "0", "LLM_MAX_TOKENS": "512"}, mock=False)
+                           "LLM_MAX_RETRIES": "1", "LLM_MAX_TOKENS": "512"}, mock=False)
     assert (s.base_url, s.model, s.temperature, s.timeout_s, s.max_retries, s.max_tokens) == (
-        "http://gpu-box:11434/v1", "qwen2.5:3b-instruct", 0.2, 30.0, 0, 512)
+        "http://gpu-box:11434/v1", "qwen2.5:3b-instruct", 0.2, 30.0, 1, 512)
 
 
 def test_openai_compatible_needs_base_url_and_model():

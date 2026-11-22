@@ -10,7 +10,7 @@ from __future__ import annotations
 import subprocess
 import sys
 
-V2_PATHS = ["app/llm", "tests_v2", "scripts/check_v2.py"]
+V2_PATHS = ["app/llm", "tests_v2", "tests_live", "scripts/check_v2.py", "scripts/measure_providers.py"]
 V2_MODULES = ["app/llm"]
 
 

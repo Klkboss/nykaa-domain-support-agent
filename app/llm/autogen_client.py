@@ -29,8 +29,9 @@ from app.llm.errors import LLMConfigError, LLMError, classify
 from app.llm.metering import metered, reported_or_estimated
 from app.llm.settings import LLMSettings
 
-# Declared, not detected: the review needs JSON / structured output (the editor returns a Verdict).
-MODEL_INFO = ModelInfo(vision=False, function_calling=True, json_output=True, family="unknown",
+# Declared, not detected: the review needs JSON / structured output (the editor returns a Verdict). Function
+# calling is declared OFF on purpose: reviewers hold no tools (least autonomy), and AutoGen then refuses any.
+MODEL_INFO = ModelInfo(vision=False, function_calling=False, json_output=True, family="unknown",
                        structured_output=True)
 
 

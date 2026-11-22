@@ -12,6 +12,7 @@ rule, so it largely re-confirms what the output guardrail already enforced.
 from __future__ import annotations
 
 import json
+import os
 import re
 from typing import Any
 
@@ -237,7 +238,23 @@ class MockJudgeLLM(BaseLLM):
         return False
 
 
+def default_judge_llm() -> BaseLLM:
+    """v2: JUDGE_PROVIDER=mock (default: the deterministic rubric scorer) or llm (the configured real model,
+    schema-constrained to JudgeScores; a real LLM judgement, to be labelled as such)."""
+    if os.getenv("JUDGE_PROVIDER", "mock").strip().lower() != "llm":
+        return MockJudgeLLM()
+    from app.llm.crew_llm import build_crew_llm
+    from app.llm.errors import LLMConfigError
+    from app.llm.settings import load_llm_settings
+
+    settings = load_llm_settings()
+    if not settings.is_real:
+        raise LLMConfigError("JUDGE_PROVIDER=llm needs a real provider (MOCK_LLM=false and LLM_PROVIDER set).")
+    return build_crew_llm(settings, response_format=JudgeScores)
+
+
 def judge(rubric: dict[str, str], case: dict[str, Any], llm: BaseLLM | None = None) -> tuple[JudgeScores, str, str]:
     prompt = build_prompt(rubric, case)
-    raw = (llm or MockJudgeLLM()).call([{"role": "user", "content": prompt}])
+    raw = (llm or default_judge_llm()).call([{"role": "user", "content": prompt}])
+    raw = raw if isinstance(raw, str) else raw.model_dump_json()
     return JudgeScores.model_validate_json(raw), raw, prompt

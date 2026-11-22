@@ -24,6 +24,15 @@ from app.rag.vector_store import get_collection, index_documents, persistent_cli
 from app.tools.order_lookup import ESCALATION_THRESHOLD, OrderLookupError, check_order_status, normalise_record_id
 
 
+def default_generator() -> MockGroundedGenerator:
+    """The mock generator, or (v2) the real-model generator when a real provider is configured."""
+    from app.llm.generator import LLMGroundedGenerator  # v2 (lazy: avoids an import cycle with app.core.cache)
+    from app.llm.settings import load_llm_settings
+
+    settings = load_llm_settings()
+    return LLMGroundedGenerator(settings) if settings.is_real else MockGroundedGenerator()
+
+
 class RagLookupInput(BaseModel):
     query: str = Field(..., description="The customer's policy question, in full.")
 
@@ -67,7 +76,7 @@ class RagLookupTool(BaseTool):
 
     collection: Any = Field(default=None, exclude=True)
     threshold: float = SIMILARITY_THRESHOLDS[RECOMMENDED_STRATEGY]
-    generator: MockGroundedGenerator = Field(default_factory=MockGroundedGenerator, exclude=True)
+    generator: MockGroundedGenerator = Field(default_factory=default_generator, exclude=True)
     budget: Any = Field(default=None, exclude=True)  # app.governance.budget.RequestBudget (Phase 8), or None
     cache: Any = Field(default=None, exclude=True)  # app.core.cache.GenerationCache (Task 16), or None
     _invocations: list[dict[str, Any]] = PrivateAttr(default_factory=list)
@@ -94,6 +103,8 @@ class RagLookupTool(BaseTool):
             if self.collection is None:
                 self.collection = default_policy_collection()
             generator = self.generator if self.budget is None else _MeteredGenerator(self.generator, self.budget)
+            if hasattr(self.generator, "budget"):  # v2 real-model generator: it meters its own call on real usage
+                self.generator.budget, generator = self.budget, self.generator
             if self.cache is not None:  # outermost: a hit skips the model call and therefore its budget charge
                 generator = CachedGenerator(generator, self.cache, self.generator)
             a = answer_query(query, self.collection, self.threshold, generator=generator)
@@ -129,6 +140,10 @@ class CheckOrderStatusTool(BaseTool):
         "the escalation threshold and whether escalation is recommended."
     )
     args_schema: type[BaseModel] = OrderLookupInput
+    # v2 (real models): the order ids the customer actually wrote in the question or conversation. A model can
+    # invent an id (a 3B model copied the "ORD-1234" format hint); such a call is refused, nothing is looked up, and
+    # the refusal is not order evidence. None = no restriction (the mock path).
+    allowed_ids: set[str] | None = Field(default=None, exclude=True)
     _invocations: list[dict[str, Any]] = PrivateAttr(default_factory=list)
     _outputs: list[dict[str, Any]] = PrivateAttr(default_factory=list)
 
@@ -142,6 +157,8 @@ class CheckOrderStatusTool(BaseTool):
 
     def _run(self, record_id: str) -> str:
         self._invocations.append({"record_id": record_id})
+        if self.allowed_ids is not None and str(record_id).strip().upper() not in self.allowed_ids:
+            return json.dumps({"tool": self.name, "not_looked_up": "the customer has not given this order id"})
         try:
             result = {"tool": self.name, "record_id": normalise_record_id(record_id), **check_order_status(record_id),
                       "escalation_threshold": ESCALATION_THRESHOLD}

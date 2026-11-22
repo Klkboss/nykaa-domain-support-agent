@@ -8,7 +8,9 @@ MOCK_LLM=true (the default) forces the mock provider whatever LLM_PROVIDER says.
   OLLAMA_BASE_URL    default http://localhost:11434 (the /v1 suffix is added)
   LLM_TEMPERATURE    default 0
   LLM_TIMEOUT_S      default 120 (per HTTP attempt)
-  LLM_MAX_RETRIES    default 2 (the OpenAI SDK's backoff: 429, 408, 409, 5xx, connection errors; honours Retry-After)
+  LLM_MAX_RETRIES    default 0 for ollama (a local server that is down or too slow will not recover in seconds,
+                     and retries would multiply the wait), 2 otherwise (the OpenAI SDK's backoff: 429, 408, 409,
+                     5xx, connection errors; honours Retry-After)
   LLM_MAX_TOKENS     default 1024 (completion cap per call; also part of each call's budget reservation)
 """
 
@@ -68,6 +70,7 @@ def load_llm_settings(env: Mapping[str, str] | None = None, mock: bool | None = 
     if provider == "ollama":
         fields["base_url"] = env.get("OLLAMA_BASE_URL", OLLAMA_DEFAULT_URL).strip().rstrip("/") + "/v1"
         fields["model"] = env.get("LLM_MODEL", "").strip() or OLLAMA_DEFAULT_MODEL
+        fields["max_retries"] = 0
     else:
         fields["base_url"] = env.get("LLM_BASE_URL", "").strip()
         fields["model"] = env.get("LLM_MODEL", "").strip()

@@ -45,7 +45,9 @@ def cache_key(query: str, chunks: list[RetrievedChunk], generator: MockGroundedG
     payload = {
         "query": normalise_query(query),
         "context": [[c.chunk_id, c.doc_id, c.text, c.metadata] for c in chunks],
-        "generator": [type(generator).__qualname__, generator.max_sentences, generator.margin],
+        # v2: a real-model generator adds (provider, base_url, model); the mock adds nothing, so its keys are unchanged
+        "generator": [type(generator).__qualname__, generator.max_sentences, generator.margin,
+                      *getattr(generator, "identity", ())],
         "embedding_model": MODEL_NAME,
     }
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
@@ -120,6 +122,9 @@ class CachedGenerator(MockGroundedGenerator):
         except Exception:  # a broken cache must never break an answer
             key = None
         text = self._inner.generate(query, chunks)  # BudgetExceeded from here is NOT caught
+        if not getattr(self._inner, "last_cacheable", True):  # v2: a real model's fallback text is not stored
+            self._note("skipped")
+            return text
         if key is None:
             self._note("error")
             return text

@@ -25,6 +25,11 @@ MAX_REQUEST_TOKENS = 12_000
 # Upper-bound projection fitted to measured spend: about 6 tokens per question token and 4 per history token
 # (both covered by 6), plus at most 6,692 tokens not proportional to the input. Tests check projection >= spend.
 PROJECTION_BASE_TOKENS = 7_000
+# v2: cap for REAL providers, on provider-reported tokens (evaluation/v2/ollama_measurements.json, Ollama, 3 models x
+# 6 questions x 2 rounds): normal requests 934-4,126 tokens; the stress case (a 1,940-character question after 10
+# history messages) 4,393-5,382. The cap is about 2.2x the largest measured request, like the mock cap's margin
+# (1.9x); that it equals MAX_REQUEST_TOKENS is a coincidence of the measurements, not a shared constant.
+MAX_REQUEST_TOKENS_REAL = 12_000
 PROJECTION_INPUT_COPIES = 6
 
 

@@ -85,7 +85,14 @@ def check_draft(draft: SupportDraft, rag_output: dict | None, order_output: dict
         report.rejected_order = True  # an error the tool never reported is also an invented order fact
         order_error = None
 
-    checked = SupportDraft(policy_claims=kept, policy_error=draft.policy_error, order=order,
+    policy_error = draft.policy_error
+    if policy_error is not None and not (rag_output and rag_output.get("error") == policy_error):
+        # v2: like order_error, the only allowed policy error is the one the tool reported (a real model can write
+        # any text into this field, and it is rendered to the customer)
+        report.rejected_claims.append(f"policy_error: {policy_error[:80]}")
+        policy_error = None
+
+    checked = SupportDraft(policy_claims=kept, policy_error=policy_error, order=order,
                            order_error=order_error, needs_order_id=draft.needs_order_id)
     report.grounded = not report.rejected_claims and not report.rejected_order
     return checked, report
