@@ -22,10 +22,15 @@ from app.rag.embeddings import EMBEDDING_DIM, MODEL_DIR, MODEL_NAME  # noqa: E40
 
 # Only what SentenceTransformers needs (the repo also ships ONNX/OpenVINO/TF weights we never use).
 ALLOW = ["*.json", "vocab.txt", "model.safetensors", "1_Pooling/*"]
+# v2: the revision the retrieval thresholds were calibrated on, so Docker/CI builds embed identically.
+# MODEL_REVISION=latest fetches the newest one instead (then re-run scripts/run_rag_evaluation.py).
+PINNED_REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 
 
 def main() -> None:
-    revision = HfApi().model_info(MODEL_NAME).sha
+    revision = os.environ.get("MODEL_REVISION", PINNED_REVISION)
+    if revision == "latest":
+        revision = HfApi().model_info(MODEL_NAME).sha
     path = snapshot_download(MODEL_NAME, revision=revision, local_dir=MODEL_DIR, allow_patterns=ALLOW)
     (MODEL_DIR / "REVISION.txt").write_text(f"{MODEL_NAME}@{revision}\n", encoding="utf-8")
     size_mb = sum(f.stat().st_size for f in MODEL_DIR.rglob("*") if f.is_file()) / 1e6

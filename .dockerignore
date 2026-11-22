@@ -1,0 +1,9 @@
+# Whitelist: only what the image needs. Keeps .env, .venv, models/, logs, assistant notes and git out of the build.
+*
+!app/
+!data/
+!migrations/
+!scripts/
+!alembic.ini
+!requirements.lock.linux.txt
+**/__pycache__

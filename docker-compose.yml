@@ -1,0 +1,66 @@
+# v2: the whole stack with one command (after `copy .env.example .env` and setting POSTGRES_PASSWORD there):
+#   docker compose up --build            -> http://127.0.0.1:8000  (MOCK_LLM unless .env says otherwise)
+# postgres (data in a named volume) -> migrate (alembic upgrade head + idempotent seed, then exits) -> api.
+# Real model: set MOCK_LLM=false and LLM_PROVIDER=ollama in .env. The api reaches the HOST's Ollama by default
+# (host.docker.internal, uses the host GPU); `docker compose --profile ollama up` adds a CPU-only Ollama container
+# instead (then set DOCKER_OLLAMA_BASE_URL=http://ollama:11434 and pull a model into it).
+name: nykaa-support
+
+x-database-url: &database-url
+  # The password comes from .env (git-ignored); use letters and digits only, since it is embedded in a URL.
+  DATABASE_URL: postgresql://nykaa:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}@postgres:5432/nykaa
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: nykaa
+      POSTGRES_DB: nykaa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "nykaa", "-d", "nykaa"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    # No published port: only the other services on this network can reach the database.
+
+  migrate:
+    build: .
+    image: nykaa-support:local
+    command: ["sh", "-c", "alembic upgrade head && python -m scripts.seed_db"]
+    environment:
+      <<: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: .
+    image: nykaa-support:local
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *database-url
+      OLLAMA_BASE_URL: ${DOCKER_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:0.40.16
+    volumes:
+      - ollama:/root/.ollama
+
+volumes:
+  pgdata:
+  ollama:
