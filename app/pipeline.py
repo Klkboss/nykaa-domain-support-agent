@@ -125,7 +125,7 @@ class SupportAssistant:
         except BudgetExceeded:
             return self._over_budget(question, report)
         except (ValidationError, ValueError, TypeError) as e:
-            return self._failure(question, report, f"schema: {type(e).__name__}")
+            return self._failure(question, report, f"schema: {_failure_kind(e)}")  # same type name unless a v2 label
         except Exception as e:  # the crew itself failed (e.g. CrewAI could not convert the output)
             return self._failure(question, report, f"crew: {_failure_kind(e)}")
         rag_output, order_output = (run.rag_outputs or [None])[-1], (run.order_outputs or [None])[-1]

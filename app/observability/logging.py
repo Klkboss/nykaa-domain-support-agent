@@ -44,6 +44,26 @@ class JsonlLogger:
     def log(self, **fields: Any) -> dict[str, Any]:
         record = {"timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds"), **_sanitise(fields)}
         line = json.dumps(record, ensure_ascii=False, default=str)
+        sink_error = self._to_database(json.loads(line))  # the same sanitised record, JSON-safe
         with self._lock, self.path.open("a", encoding="utf-8") as f:
             f.write(line + "\n")
+            if sink_error:
+                f.write(json.dumps({"timestamp": record["timestamp"], "type": "log_sink_error",
+                                    "error_type": sink_error}) + "\n")
         return record
+
+    @staticmethod
+    def _to_database(record: dict[str, Any]) -> str | None:
+        """v2: also store the record in request_log when DATABASE_URL is set. A database problem never breaks the
+        request or the JSONL log; it is noted there by exception TYPE name only."""
+        from app.db import database_url
+
+        if not database_url():
+            return None
+        try:
+            from app.db.repositories import log_record
+
+            log_record(record)
+        except Exception as e:
+            return type(e).__name__
+        return None

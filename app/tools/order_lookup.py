@@ -28,6 +28,17 @@ RECORD_ID_RE = re.compile(r"ORD-[0-9]{4}")  # not \d: that also matches non-ASCI
 _ORDERS_BY_ID: dict[str, dict[str, Any]] = {o["record_id"]: o for o in ORDERS}
 
 
+def _find_order(record_id: str) -> dict[str, Any] | None:
+    """v2: the orders table when DATABASE_URL is set (seeded from the same ORDERS), else the in-memory dataset."""
+    from app.db import database_url
+
+    if database_url():
+        from app.db.repositories import get_order
+
+        return get_order(record_id)
+    return _ORDERS_BY_ID.get(record_id)
+
+
 class OrderLookupError(Exception):
     """Base class. Messages never echo raw caller input."""
 
@@ -61,7 +72,7 @@ def escalation_score(delayed_shipment: bool, days_since_created: int) -> float:
 def check_order_status(record_id: str) -> dict[str, Any]:
     """Return status, order_value_inr, escalation_score and the threshold decision for one order."""
     key = normalise_record_id(record_id)
-    order = _ORDERS_BY_ID.get(key)
+    order = _find_order(key)
     if order is None:
         raise OrderNotFoundError(f"No order found with record_id {key}")  # key is validated, safe to echo
     score = escalation_score(order["delayed_shipment"], order["days_since_created"])

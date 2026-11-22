@@ -225,6 +225,13 @@ def test_no_id_order_question_end_to_end_asks_for_the_id(assistant):
     assert r.status == "needs_order_id" and r.reply == "Please share your order ID (format ORD-1234) so I can check it."
 
 
+def test_an_empty_model_reply_is_labelled_and_answered_politely(assistant):
+    a, _, _ = assistant(lookup=completion(""))  # no text and no tool call (seen on qwen2.5:3b)
+    r = ask(a, ORDER)
+    assert (r.status, r.reply) == ("error", ERROR_REPLY)
+    assert r.guardrails.rejected_claims[0].endswith("empty_model_response")
+
+
 def test_failure_reasons_are_fixed_labels_never_message_text():
     from app.pipeline import _failure_kind
 
