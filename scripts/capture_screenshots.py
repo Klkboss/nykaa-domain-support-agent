@@ -70,7 +70,8 @@ def main(base: str = "http://127.0.0.1:8010", out: str = "docs/screenshots") -> 
             if width == 1440:
                 print("keyboard Tab order:", " | ".join(tab_order(page)))
                 page.keyboard.press("Escape")
-                page.evaluate("document.activeElement.blur()")  # the live progress steps, captured while the first answer is being prepared
+                page.evaluate("document.activeElement.blur()")
+                # the live progress steps, captured while the first answer is being prepared
                 page.fill("#question", MULTI_PART)
                 page.keyboard.press("Enter")
                 page.wait_for_selector(".steps li:nth-child(3)", timeout=60_000)

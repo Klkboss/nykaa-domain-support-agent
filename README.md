@@ -2,6 +2,267 @@
 
 [![CI](https://github.com/Klkboss/nykaa-domain-support-agent/actions/workflows/ci.yml/badge.svg?branch=v2)](https://github.com/Klkboss/nykaa-domain-support-agent/actions/workflows/ci.yml)
 
+This repository holds two things:
+- **v2: production upgrade** (this section): real local models through Ollama, PostgreSQL, Docker, CI and a chat UI.
+- **The graded capstone** (everything after the divider): unchanged, and graded under `MOCK_LLM=true`.
+
+With no environment variables set, the project still behaves exactly like the graded capstone: deterministic mock
+models, no API keys, no network. The policies are **simulated** (not official Nykaa policy), and every order and
+customer detail is fictional.
+
+## v2: production upgrade
+
+![Chat UI, 1440 px, dark theme](docs/screenshots/chat-1440-dark.png)
+
+### What v2 adds
+- **Real models:** a provider layer for any OpenAI-compatible server. It runs locally on Ollama; the default is
+  `qwen3:4b-instruct-2507-q4_K_M`, chosen by measurement over qwen2.5:3b and qwen2.5:7b. Every real model call is
+  charged to the same per-request token budget using the provider's reported usage. A failure of any kind (server
+  down, timeout, invalid JSON, an invalid draft after its one retry) ends in a polite reply, never a crash or an
+  invented answer.
+- **PostgreSQL** (optional) holds orders, chat history and the request log, with Alembic migrations and an idempotent
+  seed. Without `DATABASE_URL`, everything stays in memory as before.
+- **Docker and CI:**
+  - A non-root image with CPU-only torch and the embedding model pinned to its calibrated revision.
+  - `docker compose up` runs Postgres, then migrations and seed, then the API.
+  - GitHub Actions runs lint, type checks, the full suite with outbound network blocked, Postgres integration tests
+    and a compose smoke test. It needs no secrets.
+- **Chat UI** at `/`:
+  - live progress steps from the real pipeline stages;
+  - a "How this answer was made" panel per reply: sources, tools, groundedness, review verdict, escalation, model,
+    latency and tokens;
+  - six sample questions, including an injection attempt;
+  - dark and light themes, WCAG AA contrast and keyboard access, usable from 360 px;
+  - per-client rate limits and `/health` for a public demo.
+- **Unchanged:** the safety and governance layers:
+  - the groundedness guardrail;
+  - PII masking (in logs and the database too);
+  - prompt-injection blocking;
+  - least autonomy: only the Lookup Agent may call `check_order_status`, and the AutoGen reviewers get no tools
+    even on a real model;
+  - the per-request token budget, caching of validated policy text only, and telemetry off.
+
+### Architecture
+```mermaid
+flowchart LR
+  UI["Chat UI (/)<br/>ws /ws/chat?progress=1&explain=1"] --> API
+  CLI["HTTP client"] -->|"POST /ask"| API["FastAPI<br/>rate limit · /health"]
+  API --> G["Input guardrails<br/>PII masking · injection block"]
+  G --> B["Token budget pre-flight"]
+  B --> M["Session memory<br/>PostgreSQL or in-memory"]
+  M --> R
+  subgraph CREW["CrewAI crew (sequential)"]
+    R["Retrieval Agent<br/>rag_lookup"] --> L["Lookup Agent<br/>check_order_status"]
+    L --> C["Response Composer<br/>SupportDraft (JSON schema)"]
+  end
+  R -.-> V[("ChromaDB<br/>MiniLM embeddings")]
+  L -.-> O[("Orders<br/>PostgreSQL or in-memory")]
+  C --> GR["Rules in code + groundedness guardrail"]
+  GR --> AG["AutoGen review<br/>Policy reviewer → Final editor"]
+  AG --> F["Final groundedness check"] --> RE["Reply rendered in code"]
+  P{{"Model provider<br/>mock · Ollama · OpenAI-compatible"}} -.-> R & L & C & AG
+```
+Customer-facing text is always rendered in code from a validated, guardrail-checked draft. A model can only remove
+policy claims or leave them out; it can never add text, citations or order facts to the reply.
+
+### Model providers
+| `LLM_PROVIDER` | Needs | Used for |
+|---|---|---|
+| `mock` (default; forced while `MOCK_LLM=true`) | nothing | the graded capstone, tests, CI: deterministic and offline |
+| `ollama` | a local Ollama server; no key | local real-model runs (default model `qwen3:4b-instruct-2507-q4_K_M`) |
+| `openai_compatible` | `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_API_KEY` if the server needs one | any other OpenAI-compatible server |
+
+### Run it
+**1. Python venv, mock (the capstone behaviour):**
+```powershell
+py -3.12 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe scripts\download_model.py      # one-time: embedding model at the pinned revision
+.venv\Scripts\python.exe -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000   # http://127.0.0.1:8000
+```
+**2. With a real local model (Ollama):**
+```powershell
+winget install Ollama.Ollama
+& "$env:LOCALAPPDATA\Programs\Ollama\ollama.exe" pull qwen3:4b-instruct-2507-q4_K_M
+$env:MOCK_LLM = "false"; $env:LLM_PROVIDER = "ollama"
+.venv\Scripts\python.exe -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000
+```
+**3. Docker, the whole stack:**
+```powershell
+copy .env.example .env      # set POSTGRES_PASSWORD (letters and digits); .env is git-ignored
+docker compose up --build   # http://127.0.0.1:8000; MOCK_LLM unless .env sets MOCK_LLM=false + LLM_PROVIDER=ollama
+```
+Inside compose, the API reaches the host's Ollama (and its GPU) through `host.docker.internal`.
+`docker compose --profile ollama up` adds a CPU-only Ollama container instead.
+
+### Environment variables
+All are optional; `.env.example` lists them with comments. `.env` is never loaded implicitly, so pass it with
+`--env-file .env` or use compose.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MOCK_LLM` | `true` | `true` forces the deterministic mock, whatever `LLM_PROVIDER` says |
+| `LLM_PROVIDER` | `mock` | `mock`, `ollama` or `openai_compatible` |
+| `LLM_MODEL` | provider default | model name (Ollama: `qwen3:4b-instruct-2507-q4_K_M`) |
+| `OLLAMA_BASE_URL` / `LLM_BASE_URL` | `http://localhost:11434` / none | server URL (`/v1` is added for Ollama) |
+| `LLM_API_KEY` | none | only for servers that need one; never committed |
+| `LLM_TEMPERATURE`, `LLM_TIMEOUT_S`, `LLM_MAX_TOKENS` | `0`, `120`, `1024` | generation controls |
+| `LLM_MAX_RETRIES` | `0` for Ollama, `2` otherwise | transport retries (low, so a stopped server fails fast) |
+| `DATABASE_URL` | none (in-memory) | PostgreSQL URL; `postgres://` and `postgresql://` both work |
+| `TEST_DATABASE_URL` | none | only for `tests_v2/test_v2_postgres.py`, which **drops** the schema |
+| `POSTGRES_PASSWORD` | none | required by `docker-compose.yml` |
+| `DOCKER_OLLAMA_BASE_URL` | host Ollama | where the API container finds Ollama |
+| `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_PER_DAY` | off (image: `6`, `100`) | questions per client IP |
+| `JUDGE_PROVIDER` | `mock` | `llm` scores evaluations with the configured real model |
+
+### Database and migrations
+```powershell
+$env:DATABASE_URL = "postgresql://user:password@localhost:5432/nykaa"
+.venv\Scripts\alembic.exe upgrade head          # creates orders, chat_sessions, chat_messages, request_log
+.venv\Scripts\python.exe -m scripts.seed_db     # the same 50 fictional orders; safe to run again
+```
+- `check_order_status` remains the only way to read orders.
+- Chat history and the request log store **masked** text only.
+- A database failure never breaks a request or the JSONL log.
+- The first write of a new session is one atomic upsert, so simultaneous requests can't collide.
+
+### Chat UI
+The API serves a chat page at http://127.0.0.1:8000/. It is static HTML, CSS and vanilla JS with no build step. The
+fonts are self-hosted (Sora, Inter and JetBrains Mono; SIL OFL 1.1), and a strict Content Security Policy allows only
+this origin.
+
+
+- **Live progress:** each reply shows its real stages as they start: Checking safety → Searching policies →
+  Looking up order (only when the order tool runs) → Composing → Reviewing. The pipeline emits these events
+  (`RequestTrace` in app/pipeline.py); no timer fakes them.
+- **How this answer was made:** every reply has a collapsible panel with:
+  - the cited and retrieved KB documents, and the tools called;
+  - the groundedness result, the AutoGen review verdict (approved or revised) and the escalation flag;
+  - the guardrail category when a question is blocked;
+  - the model, the latency and the tokens charged to the request budget.
+- **Sample questions:** a policy question, an order lookup (ORD-1016), an order question without an ID, a
+  multi-part question, an out-of-scope question and a prompt-injection attempt.
+- **Opt-in protocol:** the page connects to `/ws/chat?progress=1&explain=1`. Without those parameters every
+  WebSocket message is exactly as before, and a test locks this.
+- **Public-demo protection:**
+  - per-client question limits: off locally, and on in the Docker image at 6 per minute and 100 per UTC day,
+    via `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_PER_DAY`;
+  - the existing 2,000-character question limit, plus the token budget;
+  - `GET /health`, which reports the provider, the model and the storage, never secrets.
+- **Accessibility:** keyboard use (a skip link, visible focus, Enter to send, native `<details>` panels), labelled
+  controls and a live region for replies. It works on mobile from 360 px. A test checks WCAG AA contrast (≥ 4.5:1)
+  for every text colour on every background, in both themes. Light theme uses darker accent and status colours than
+  dark theme, which is what AA requires there.
+- **Screenshots** of 360 / 768 / 1440 px in both themes are in [docs/screenshots/](docs/screenshots/), regenerated with
+  [scripts/capture_screenshots.py](scripts/capture_screenshots.py) (needs `pip install playwright` and Edge).
+
+### Docker and CI
+The whole stack in containers: PostgreSQL, a one-shot `migrate` service (`alembic upgrade head` plus the
+idempotent seed of the 50 orders), then the API on http://127.0.0.1:8000. `MOCK_LLM=true` unless `.env` says
+otherwise.
+```powershell
+copy .env.example .env          # then set POSTGRES_PASSWORD (letters and digits); .env is git-ignored
+docker compose up --build       # first build downloads ~2.3 GB of dependencies and the pinned embedding model
+docker compose down --volumes   # stop and delete the database volume
+```
+- **Image:** multi-stage `python:3.12-slim-bookworm` running as a non-root user. It has CPU-only torch from
+  [requirements.lock.linux.txt](requirements.lock.linux.txt) and the embedding model at the pinned revision
+  `1110a24…`, the one the retrieval thresholds were calibrated on. It needs no network at runtime.
+- **Linux lock:** every package shared with the Windows lock has the same version. The only differences are
+  torch `+cpu`, `uvloop` added, and the Windows-only `pywin32`/`colorama` absent.
+- **Real model in compose:** set `MOCK_LLM=false` and `LLM_PROVIDER=ollama` in `.env`. By default the API
+  container uses the host's Ollama (and its GPU) through `host.docker.internal`. `docker compose --profile ollama up`
+  adds a CPU-only Ollama container instead; then set `DOCKER_OLLAMA_BASE_URL=http://ollama:11434`.
+- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on pushes and pull requests to `main` and `v2`.
+  It needs no secrets, and every action is pinned to a commit SHA.
+  - The `test` job installs from the Linux lock, downloads the pinned model and builds `chroma_db/`. It then runs
+    `scripts/check_v2.py` and the full suite under `MOCK_LLM` with outbound network blocked, then the PostgreSQL
+    tests against a service container (they fail, rather than skip, if it is missing).
+  - The `docker` job builds the image and runs `docker compose up --wait`. It then runs
+    [scripts/smoke_api.py](scripts/smoke_api.py) (a policy question and an order question over HTTP) and checks
+    the database holds the 50 orders and the chat history.
+
+### Safety fixes found by running real models
+The mock always behaved. Real models found these gaps, and each one is now handled in code, with a test:
+- **Invented order IDs.** Small models called `check_order_status` with IDs nobody gave (`ORD-1234`, `ORD-123456`,
+  `ORD-9876`). Now only IDs the customer actually wrote can be looked up. Any other call is refused, and the refusal
+  is never used as evidence.
+- **A question without an order ID.** Whether to ask for the order ID is decided by a fixed rule in code, never by
+  the model. Contradictory drafts are repaired and counted.
+- **Order facts dropped or altered.** Order facts are copied from the tool's output in code. A policy error is shown
+  only if the policy tool really reported it.
+- **Blended sources.** One sentence merging two documents passed a check that looked at all documents together.
+  Every sentence must now be supported by **one** document. Multi-part answers use separately verified quotes, and
+  the grounding check is exactly as strict as before.
+- **Unrelated policy text on order questions.** Pure order questions get no policy text.
+- **Failures that multiplied.** CrewAI's agent retries tripled every timeout, so they are off on the real path, and
+  Ollama gets no transport retries. Schema parsing moved from inside the agent to a server-side JSON schema plus a
+  guardrail with one retry. Every failure ends in the polite reply.
+- **Provider error text in logs.** Error bodies are redacted at log-record creation, for every logger.
+- **Concurrency.** Each request's evidence is kept in a per-request `RequestTrace`, never in shared state, and the
+  first history write of a session is an atomic upsert.
+
+### Measured results
+**The 15-query evaluation**, from [evaluation/V2_PROVIDER_COMPARISON.md](evaluation/V2_PROVIDER_COMPARISON.md):
+- The same queries, judge and rubrics as the graded evaluation. The judge is a deterministic rubric scorer, 1–5.
+- One measured request per query.
+- qwen3:4b requests started at ≤ 65 °C. Any request that hit a thermal slowdown was re-run (1 of 15); in all the
+  measured ones, NVIDIA's thermal and power-cap slowdown counters stayed at 0 ms.
+- The mock run reproduces the committed graded r2 results exactly.
+
+| Provider | Accuracy | Grounding | Completeness | Safety | Statuses | Latency s, median / max | Tokens, median | GPU °C at start |
+|---|---|---|---|---|---|---|---|---|
+| mock | 4.73 (v3: 5.00) | 5.00 | 5.00 | 5.00 | 13 answered, 1 fallback, 1 blocked | 0.15 / 0.18 | 5,320 (estimated) | n/a (CPU) |
+| qwen3:4b (Ollama, RTX 4050 Laptop) | 4.33 | 5.00 | 4.47 | 5.00 | 11 answered, 2 fallback, 1 needs ID, 1 blocked | 15.79 / 18.97 | 2,531 (reported) | 51–65 |
+
+The real model scores lower on three queries, and each was traced stage by stage:
+- **E07 and E08:** the 4B model, acting as the AutoGen Final Editor, returned a partial copy of the draft or rewrote
+  it. Because a review may only *remove* claims, correct grounded content was dropped. Both failed safe (a request
+  for the order ID, and a refusal).
+- **E12:** the generator picked one of two expected sentences.
+
+Grounding and safety stay at 5.00: nothing unsupported or unsafe reached a reply.
+
+**The Stage B model comparison**, on 6 demo questions × 2 rounds ([evaluation/v2/](evaluation/v2/)). GPU temperature
+was not recorded in this run. The same code measured today, unthrottled, is about 2× slower: identical commits gave
+identical times in an A/B, so the machine differs and the code doesn't. The cause is not identified.
+
+| Model | Expected status | Correct routing | Errors | Latency s, median / max | On GPU |
+|---|---|---|---|---|---|
+| qwen2.5:3b-instruct | 6/12 | 8/12 | 4 | 6.43 / 8.81 | 100 % |
+| **qwen3:4b-instruct-2507** (chosen) | 8/12 → **12/12** after the rules in code | 10/12 → **12/12** | 0 | 7.98 / 10.61 → 5.86 / 12.92 | 100 % |
+| qwen2.5:7b-instruct | 8/12 | 6/12 | 3 | 18.67 / 23.99 | 82 % (spills to CPU) |
+
+### Tests and CI
+- **782 tests:** the capstone's **664 are unchanged**, plus 118 v2 tests. They run offline with outbound network
+  blocked.
+  - The 5 PostgreSQL tests run only with `TEST_DATABASE_URL`, and in CI against a service container.
+  - `tests_live/` (4 smoke tests against a real Ollama) runs only with `LIVE_LLM=1`.
+- `scripts/check_v2.py` makes ruff and strict mypy blocking on new v2 code, and report-only on the capstone code.
+- **Known intermittent failure:** the capstone test `tests/test_cache.py::test_11_add_document_clears_the_cache`.
+  - It failed in 2 of 5 full runs in one batch, and passed in the 7 full runs after it.
+  - The failing batch overlapped with another process using the same Chroma store and the GPU.
+  - In one passing run, Chroma 1.5.9 raised `Error creating hnsw segment reader: Nothing found on disk` inside the
+    API's freshly built on-disk index.
+  - The root cause is not established. Replies degrade safely, to "policy search is temporarily unavailable".
+- **The v2 tests now use their own on-disk index** instead of the capstone's shared in-memory one, which Chroma can
+  break mid-process ("Error finding id"). They passed in every full run since.
+
+### Demo and limits
+- [docs/DEMO_RECORDING.md](docs/DEMO_RECORDING.md): how to record a 1–2 minute demo of the chat UI on Windows.
+- Screenshots at 360, 768 and 1440 px in both themes: [docs/screenshots/](docs/screenshots/).
+- **Rate limits are kept in memory**, so they are per process and reset on restart. A multi-instance deploy would
+  need a shared store.
+- **Latency is high on a laptop GPU**, and higher still when it throttles. See the measured table above.
+- **The evaluation judge is a deterministic rubric scorer**, not a human or an independent LLM.
+- **No public deployment yet** (Stage F was skipped by decision). The image and compose stack are ready for it.
+
+---
+
+# The graded capstone (MOCK_LLM)
+
+> Everything below is the original capstone README, **unchanged** from `main`. It was graded with `MOCK_LLM=true`: deterministic mock models, no API keys, no network. The results and transcripts it cites are the graded evidence; v2 never rewrites them.
+
 **Track: Nykaa (E-commerce & Retail).** Final capstone. Spec: [docs/assignment.md](docs/assignment.md).
 
 **Status: complete.** All 16 tasks are implemented, tested and independently reviewed (build phases 0–9).
@@ -735,63 +996,6 @@ never order lookups or complete responses).
   1.5.9's `InternalError: Error finding id` during Phase 8 (trigger unknown). On that error the reply is "Policy
   search is temporarily unavailable"; if the index returns nothing, the reply is the refusal. Neither is ever an
   unsupported answer, and nothing is cached.
-
-## Chat UI (v2)
-The API serves a chat page at http://127.0.0.1:8000/. It is static HTML, CSS and vanilla JS with no build step. The
-fonts are self-hosted (Sora, Inter and JetBrains Mono; SIL OFL 1.1), and a strict Content Security Policy allows only
-this origin.
-
-![Chat UI, 1440 px, dark theme](docs/screenshots/chat-1440-dark.png)
-
-- **Live progress:** each reply shows its real stages as they start: Checking safety → Searching policies →
-  Looking up order (only when the order tool runs) → Composing → Reviewing. The pipeline emits these events
-  (`RequestTrace` in app/pipeline.py); no timer fakes them.
-- **How this answer was made:** every reply has a collapsible panel with:
-  - the cited and retrieved KB documents, and the tools called;
-  - the groundedness result, the AutoGen review verdict (approved or revised) and the escalation flag;
-  - the guardrail category when a question is blocked;
-  - the model, the latency and the tokens charged to the request budget.
-- **Sample questions:** a policy question, an order lookup (ORD-1016), an order question without an ID, a
-  multi-part question, an out-of-scope question and a prompt-injection attempt.
-- **Opt-in protocol:** the page connects to `/ws/chat?progress=1&explain=1`. Without those parameters every
-  WebSocket message is exactly as before, and a test locks this.
-- **Public-demo protection:**
-  - per-client question limits: off locally, and on in the Docker image at 6 per minute and 100 per UTC day,
-    via `RATE_LIMIT_PER_MINUTE` / `RATE_LIMIT_PER_DAY`;
-  - the existing 2,000-character question limit, plus the token budget;
-  - `GET /health`, which reports the provider, the model and the storage, never secrets.
-- **Accessibility:** keyboard use (a skip link, visible focus, Enter to send, native `<details>` panels), labelled
-  controls and a live region for replies. It works on mobile from 360 px. A test checks WCAG AA contrast (≥ 4.5:1)
-  for every text colour on every background, in both themes. Light theme uses darker accent and status colours than
-  dark theme, which is what AA requires there.
-- **Screenshots** of 360 / 768 / 1440 px in both themes are in [docs/screenshots/](docs/screenshots/), regenerated with
-  [scripts/capture_screenshots.py](scripts/capture_screenshots.py) (needs `pip install playwright` and Edge).
-
-## Docker and CI (v2)
-The whole stack in containers: PostgreSQL, a one-shot `migrate` service (`alembic upgrade head` plus the
-idempotent seed of the 50 orders), then the API on http://127.0.0.1:8000. `MOCK_LLM=true` unless `.env` says
-otherwise.
-```powershell
-copy .env.example .env          # then set POSTGRES_PASSWORD (letters and digits); .env is git-ignored
-docker compose up --build       # first build downloads ~2.3 GB of dependencies and the pinned embedding model
-docker compose down --volumes   # stop and delete the database volume
-```
-- **Image:** multi-stage `python:3.12-slim-bookworm` running as a non-root user. It has CPU-only torch from
-  [requirements.lock.linux.txt](requirements.lock.linux.txt) and the embedding model at the pinned revision
-  `1110a24…`, the one the retrieval thresholds were calibrated on. It needs no network at runtime.
-- **Linux lock:** every package shared with the Windows lock has the same version. The only differences are
-  torch `+cpu`, `uvloop` added, and the Windows-only `pywin32`/`colorama` absent.
-- **Real model in compose:** set `MOCK_LLM=false` and `LLM_PROVIDER=ollama` in `.env`. By default the API
-  container uses the host's Ollama (and its GPU) through `host.docker.internal`. `docker compose --profile ollama up`
-  adds a CPU-only Ollama container instead; then set `DOCKER_OLLAMA_BASE_URL=http://ollama:11434`.
-- **CI** ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on pushes and pull requests to `main` and `v2`.
-  It needs no secrets, and every action is pinned to a commit SHA.
-  - The `test` job installs from the Linux lock, downloads the pinned model and builds `chroma_db/`. It then runs
-    `scripts/check_v2.py` and the full suite under `MOCK_LLM` with outbound network blocked, then the PostgreSQL
-    tests against a service container (they fail, rather than skip, if it is missing).
-  - The `docker` job builds the image and runs `docker compose up --wait`. It then runs
-    [scripts/smoke_api.py](scripts/smoke_api.py) (a policy question and an order question over HTTP) and checks
-    the database holds the 50 orders and the chat history.
 
 ## All commands
 ```powershell
