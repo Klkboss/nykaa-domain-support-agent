@@ -26,9 +26,28 @@ def _records() -> list[list[str]]:
 
 
 assert _records(), "network guard not installed"
-# The capstone's in-memory Chroma fixtures (real KB, real MiniLM embeddings), from the same guard module.
-client = socket.socket.connect.__globals__["client"]
-collections = socket.socket.connect.__globals__["collections"]
+
+
+@pytest.fixture(scope="session")
+def collections(tmp_path_factory):
+    """tests_v2's OWN index (real KB, real MiniLM embeddings) in an on-disk Chroma store in a temp dir.
+
+    Not the capstone's session-wide in-memory index: Chroma 1.5.9's in-memory store can break mid-process
+    ("Error finding id", PROJECT_STATUS.md) and then every later search returns nothing, which once failed 12
+    tests here in a full run. The on-disk client is a separate store (the deployed API uses the same kind), so v2
+    tests no longer share that state with the capstone tests.
+    """
+    from app.rag.chunking import STRATEGIES
+    from app.rag.documents import load_knowledge_base
+    from app.rag.retrieval import search
+    from app.rag.vector_store import get_collection, index_all, persistent_client
+
+    store = persistent_client(tmp_path_factory.mktemp("v2_chroma"))
+    index_all(store, load_knowledge_base())
+    cols = {s: get_collection(store, s) for s in STRATEGIES}
+    for s, col in cols.items():  # fail here, clearly, rather than as many unrelated-looking test failures
+        assert search(col, "How long do I have to return shoes?"), f"v2 test index {s} returns no results"
+    return cols
 
 REAL_ENV = {"LLM_PROVIDER": "openai_compatible", "LLM_BASE_URL": "http://llm.test/v1", "LLM_MODEL": "fake-model",
             "LLM_MAX_RETRIES": "0"}
