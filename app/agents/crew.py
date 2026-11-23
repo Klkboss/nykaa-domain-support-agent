@@ -96,7 +96,7 @@ def apply_intent_rules(draft: SupportDraft, question: str, ids_given: set[str], 
          (measured: qwen3:4b left `order` empty although the tool returned the facts). No lookup -> no order fields.
       3. A pure order question (order part answered, no policy cue in the question) gets no policy text.
       4. Each policy claim is split into sentences, so two sentences a model merged are verified separately.
-      5. Owner decision (option C): when the rag tool's output is given, the policy part is COPIED FROM IT: its
+      5. Design decision (option C): when the rag tool's output is given, the policy part is COPIED FROM IT: its
          verified exact quotes with their per-sentence citations (or its error), never the Composer's wording.
     """
     update: dict[str, Any] = {}

@@ -1,4 +1,4 @@
-"""Phase 9 verification (owner brief §7): the deployed persistent chroma_db/ index, READ-ONLY.
+"""Phase 9 verification (§7): the deployed persistent chroma_db/ index, READ-ONLY.
 
 1. Its stored ids, texts and metadata equal the chunks of data/knowledge_base/policies.json (both strategies).
 2. Repeated retrieval through search() (the answering pipeline) for every frozen query: the same results every round,

@@ -150,7 +150,7 @@ class SupportAssistant:
         trace = inputs["trace"]
         if self.fallback_settings is None:
             result = self._attempt(inputs, self.llm_settings)
-        else:  # owner decision: never make a visitor wait on the primary's backoff; the fallback keeps its retries
+        else:  # design decision: never make a visitor wait on the primary's backoff; the fallback keeps its retries
             primary = self.llm_settings.model_copy(update={"max_retries": 0})  # no SDK retries, no Retry-After wait
             with using_llm_settings(primary), without_crewai_rate_limit_retry():
                 result = self._attempt(inputs, primary)

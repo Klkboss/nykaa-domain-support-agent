@@ -14,12 +14,12 @@ keeps its own prompts). There is no up-front review reservation: each call reser
 max_tokens against the request budget and settles on the reported usage. A provider failure is re-raised as its
 typed LLMError (AutoGen itself only re-raises a RuntimeError string), so the pipeline can answer politely.
 
-v2, real provider, owner decision (Stage G, option B): the Final-Editor's retyped text is NEVER used. Measured on
+v2, real provider, design decision (Stage G, option B): the Final-Editor's retyped text is NEVER used. Measured on
 qwen3:4b, the editor returned a cut-off copy marked approved (E07) or rewrote supported sentences (E08), and the
 remove-only rule then dropped correct content. Instead, code reads the Reviewer's 'UNSUPPORTED: <sentence>' lines
 and removes exactly those sentences from the ORIGINAL draft (still remove-only). If the reviewer's output cannot be
 parsed, or a flag matches no draft sentence, every policy sentence is removed (fail-safe, as before).
-Option B+ (owner decision): a flag on a sentence that appears word for word in the retrieved policy text is overruled
+Option B+ (design decision): a flag on a sentence that appears word for word in the retrieved policy text is overruled
 (supported by definition), and a flag quoting the context itself is ignored; flags on reworded sentences still
 remove them. The editor
 still runs (the spec's two-agent team); its own verdict is kept in ReviewResult.editor_verdict for transparency.
@@ -174,7 +174,7 @@ def review_flags(reviewer_text: str, draft: str, context: str) -> ReviewFlags:
     """Read the reviewer's 'UNSUPPORTED: <sentence>' lines against the draft and the retrieved context.
 
     A flag names the draft sentence it copies (case, spacing, quotes and the final full stop ignored) or one it
-    quotes part of (at least 20 characters). Owner decision (option B+): a sentence that appears word for word in the
+    quotes part of (at least 20 characters). Design decision (option B+): a sentence that appears word for word in the
     retrieved policy text is supported by definition, so a flag on it is overruled; a flag quoting the context
     itself, not the draft, is ignored. Any other flag that matches nothing makes the output unreadable.
     """

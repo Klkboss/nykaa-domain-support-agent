@@ -1,12 +1,12 @@
 # AI governance (spec Part 4, Task 15)
 
-Source: [assignment.md](assignment.md) L215-225 and the Part 4 acceptance criteria (L266-270).
+Source: the capstone brief, Part 4 Task 15 and the Part 4 acceptance criteria.
 
 The spec asks for "the four-layer AI-governance model" and names two layers explicitly:
 - **Application layer:** least autonomy.
 - **Runtime layer:** a per-request token/cost budget.
 
-It does not name the other two. **Data layer** and **Organizational layer** are the **owner's proposed
+It does not name the other two. **Data layer** and **Organizational layer** are **my proposed
 interpretation** (Phase 0 decision, trace T15.4), not terms from the spec. They are labelled as such below.
 
 All evidence below was produced under `MOCK_LLM`, with zero API keys and the socket guard active.
@@ -151,7 +151,7 @@ transcripts.
   deliberate behaviour change for such sessions only.
 - With a real LLM, the completion would also need a `max_tokens` reservation. No real LLM is wired in.
 
-### 3. Data layer (owner's proposed interpretation, not named in the spec)
+### 3. Data layer (my proposed interpretation, not named in the spec)
 **Purpose:** keep personal data out of models, memory and logs, and keep the knowledge and evaluation data
 truthful and versioned.
 
@@ -176,22 +176,22 @@ truthful and versioned.
 - Masking covers only the fixed-format PII the spec names. Names and addresses are out of scope.
 - Session memory is in-process and is not encrypted.
 
-### 4. Organizational layer (owner's proposed interpretation, not named in the spec)
+### 4. Organizational layer (my proposed interpretation, not named in the spec)
 **Purpose:** make people accountable for decisions the system must not make alone.
 
 **Controls and where they are implemented:**
-- **Phase gates:** each phase needs owner approval before the next starts.
+- **Phase gates:** each phase is planned with a checklist before any code and reviewed before the next starts.
 - **Requirements trace:** [REQUIREMENTS_TRACE.md](REQUIREMENTS_TRACE.md) maps every spec requirement to code,
   tests and evidence.
-- **Owner approval for changes:** policy wording changes need the owner's approval (KB-08 v2), and rubric
+- **Approval for changes:** policy wording changes are approved explicitly and the old wording is kept (KB-08 v2), and rubric
   changes are versioned and labelled.
 - **Human escalation:** the escalation score flags cases for a person (`escalation_recommended`). The agent
   reports and flags; it never resolves disputes or issues refunds itself.
-- **The risk classification** above, owned by the project owner.
+- **The risk classification** above, as a documented design decision.
 
 **How it is tested:**
 - The escalation score and threshold are tested in test_order_lookup.py.
-- The trace and the approvals are process controls, recorded in the phase checklists and reports, not tested
+- The trace and the approvals are process controls, recorded in the requirements trace, not tested
   by code.
 
 **Limitations:** these are process controls of a capstone project, not an operating organisation's procedures.

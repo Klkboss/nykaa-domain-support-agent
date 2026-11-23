@@ -1,4 +1,4 @@
-"""Spec Task 16: in-memory cache for the grounded-generation step ONLY (owner decision, Phase 0).
+"""Spec Task 16: in-memory cache for the grounded-generation step ONLY (design decision, Phase 0).
 
 `CachedGenerator` wraps the generator call inside `answer_query`, so retrieval, the similarity threshold and every
 guardrail around the crew still run on every request; a hit replaces only the one generation call.

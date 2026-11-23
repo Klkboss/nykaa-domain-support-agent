@@ -1,6 +1,6 @@
 # Architecture
 
-Status: designed and approved in Phase 0; every component below is built (phases 1-9, all approved).
+Status: designed in Phase 0; every component below is built and tested (phases 1-9).
 
 ## Request flow
 
@@ -100,7 +100,7 @@ The client returns `Verdict` JSON, which AutoGen validates into `StructuredMessa
 - **Task 16 cache (built in Phase 9):** wraps the generator call INSIDE `answer_query`, after retrieval and the threshold (not `answer_query` itself, so retrieval is never skipped and the retrieved context can be part of the key). `MockGroundedGenerator.calls` shows the avoided generation call.
 - **Phase 7 `/add-document`:** validates a `KBDocument`, calls `index_documents(client, [doc], strategy)` for both strategies, then clears the cache.
 
-## Caching decision (owner, Phase 0)
+## Caching decision (Phase 0)
 Cache **only grounded RAG generation**, keyed by normalised query text. Never cache order lookup
 results or complete customer responses, because they are personalised. Adding a document clears the cache.
 

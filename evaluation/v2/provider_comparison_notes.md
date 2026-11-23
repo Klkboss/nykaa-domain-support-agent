@@ -6,7 +6,7 @@ The "before fixes" row is the first qwen3:4b run, which had two problems; both a
     then dropped every correct claim.
   - **E08:** the editor rewrote the draft, and every claim was dropped.
 
-  The owner's decision (option B): for real models, code removes exactly the sentences the Reviewer flags
+  The decision (option B): for real models, code removes exactly the sentences the Reviewer flags
   (`UNSUPPORTED: <sentence>`) from the original draft, and never uses the editor's text. Tests cover both measured
   cases.
 - **Latency included a Windows `localhost` delay.** The default Ollama URL was `http://localhost:11434`, and Ollama
@@ -21,7 +21,7 @@ The "before fixes" row is the first qwen3:4b run, which had two problems; both a
 
 - **What changed.** A flag on a sentence that appears word for word in the retrieved policy text is overruled, and
   the policy part of every answer is exact, code-verified quotes: the model only selects which sentences answer the
-  question. On real models the reviewer can therefore no longer change policy text. The owner accepted this as a
+  question. On real models the reviewer can therefore no longer change policy text. This is a
   deliberate design choice.
 - **E08 (UPI retries) is answered with the exact KB-08 sentence**, including "within 30 minutes". Rubric v1 still
   scores its accuracy 1, like the mock's, because the literal expected fact is "3 times". Rubric v3 also gives 1,
@@ -35,7 +35,7 @@ The "before fixes" row is the first qwen3:4b run, which had two problems; both a
   - The policy part is no longer lost, which was the regression this check was added for.
   - The expectation was set before this run and is not changed after seeing the result.
 
-**Thermal rule in this run (owner rule):**
+**Thermal rule in this run:**
 - Each request starts at ≤ 65 °C, and a request is discarded and re-run only if NVIDIA's thermal or power-cap counters
   grew during it, up to 4 attempts.
 - With Cooler Boost on and background apps closed, requests started at 52–57 °C, but most reached 85–87 °C and had

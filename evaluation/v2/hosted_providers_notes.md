@@ -43,7 +43,7 @@ exact, code-verified quote (option C), so differences are about which sentence a
 
 One measured run per candidate: each gap is one or two queries, so a re-run can move them.
 
-## Selection (the owner's order)
+## Selection order
 
 | Step | Cloudflare gpt-oss-120b | Groq gpt-oss-120b | Groq gpt-oss-20b | Gemini 3 Flash | Cloudflare gpt-oss-20b |
 |---|---|---|---|---|---|
@@ -71,7 +71,7 @@ closed instead of billing, and no training on customer content.
 3. **The deterministic mock (`MOCK_LLM=true`):** never rate-limited, needs no network, and is the graded behaviour.
    Label it as the offline mode in the UI.
 
-## Owner decision: both providers, with automatic failover
+## Decision: both providers, with automatic failover
 
 **Groq `openai/gpt-oss-120b` first** (about 7 s per answer, for a faster first impression), **Cloudflare
 `@cf/openai/gpt-oss-120b` second**. Built and measured (the failover tables above):

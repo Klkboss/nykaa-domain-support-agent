@@ -193,7 +193,7 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None,
         counts = await run_in_threadpool(
             lambda: {s: index_documents(request.app.state.client, [doc], s) for s in STRATEGIES})
         request.app.state.doc_ids.add(doc.doc_id)
-        request.app.state.assistant.generation_cache.clear()  # owner decision: a KB change clears the cache
+        request.app.state.assistant.generation_cache.clear()  # design decision: a KB change clears the cache
         request.state.log.update(doc_id=doc.doc_id, topic=doc.topic, chunks_indexed=counts)
         return AddDocumentResponse(trace_id=trace_id, doc_id=doc.doc_id, chunks_indexed=counts)
 

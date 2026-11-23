@@ -3,7 +3,7 @@
 The model gets the retrieved policy sentences and must return JSON {"quotes": [...]}: it SELECTS the sentences that
 answer the question, and code verifies each is exact.
   - Every quote must equal one retrieved sentence (whitespace-insensitive); it is replaced by that exact sentence.
-  - Owner decision (option C): the answer is ALWAYS the verified quotes, each its own sentence, never the model's
+  - Design decision (option C): the answer is ALWAYS the verified quotes, each its own sentence, never the model's
     own wording. (Measured on qwen3:4b: a reworded answer dropped KB-08's "within 30 minutes" condition, and an
     earlier one blended a KB-01 and a KB-12 fact.) A multi-part question keeps one verified quote per part.
   - Anything else (invalid JSON, a quote not in the context, no quotes, a provider error) falls back to the

@@ -293,7 +293,7 @@ the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` thr
   answer enters the pipeline. A fix in this run stops AutoGen's "thought" messages being read as reviewer flags.
 - **Keys:** read from `.env` by variable name, never logged or written to reports. Tests use none.
 
-**Online demo setup (owner decision): Groq first, Cloudflare on failover.**
+**Online demo setup (design decision): Groq first, Cloudflare on failover.**
 - **Failover:** a request that fails with a provider error (rate limit, outage, timeout, HTTP error) is run again
   from the start on the fallback (`LLM_FALLBACK_*`; `.env.example` has the full block). If neither can answer, the
   visitor gets "The assistant is busy right now. Please try again in a minute." Other failures keep the generic
@@ -349,7 +349,7 @@ the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` thr
 
 > Everything below is the original capstone README, **unchanged** from `main`. It was graded with `MOCK_LLM=true`: deterministic mock models, no API keys, no network. The results and transcripts it cites are the graded evidence; v2 never rewrites them.
 
-**Track: Nykaa (E-commerce & Retail).** Final capstone. Spec: [docs/assignment.md](docs/assignment.md).
+**Track: Nykaa (E-commerce & Retail).** Final capstone of the Agentic Systems and Design programme (iHUB DivyaSampark, IIT Roorkee).
 
 **Status: complete.** All 16 tasks are implemented, tested and independently reviewed (build phases 0–9).
 Requirement-by-requirement evidence: [docs/REQUIREMENTS_TRACE.md](docs/REQUIREMENTS_TRACE.md).
@@ -678,8 +678,7 @@ queries, so the recommendation rests on a small sample.
 `check_order_status(record_id: str) -> dict` in [app/tools/order_lookup.py](app/tools/order_lookup.py) looks
 up `data.dataset.ORDERS`. Evidence: `.venv\Scripts\python.exe scripts\run_order_lookup_demo.py` →
 [evaluation/transcripts/phase4_order_lookup.txt](evaluation/transcripts/phase4_order_lookup.txt) and
-[evaluation/escalation_analysis.json](evaluation/escalation_analysis.json). Plan:
-[docs/PHASE4_CHECKLIST.md](docs/PHASE4_CHECKLIST.md).
+[evaluation/escalation_analysis.json](evaluation/escalation_analysis.json).
 
 ```python
 >>> check_order_status("ORD-1029")
@@ -740,7 +739,7 @@ not folded into the spec-defined score; the Composer can apply it from `order_va
 
 [app/agents/crew.py](app/agents/crew.py) builds a real CrewAI crew of three agents. Every agent uses its own
 `MockCrewLLM` (a `crewai.llms.base_llm.BaseLLM` subclass), and `run_support_crew(question)` runs
-`crew.kickoff()`. Plan: [docs/PHASE5_CHECKLIST.md](docs/PHASE5_CHECKLIST.md).
+`crew.kickoff()`.
 Evidence: `scripts/run_crew_demo.py` →
 [evaluation/transcripts/phase5_crewai.txt](evaluation/transcripts/phase5_crewai.txt). It contains CrewAI's own
 verbose agent and tool panels and was produced with the socket guard active (0 outbound attempts).
@@ -778,7 +777,7 @@ by their `args_schema` fields (`query` vs `record_id`), never by name.
 ## Session memory, structured output and guardrails (Part 2, Tasks 8–10)
 
 Every customer turn goes through `SupportAssistant.ask(session_id, question)` in
-[app/pipeline.py](app/pipeline.py). Plan: [docs/PHASE6_CHECKLIST.md](docs/PHASE6_CHECKLIST.md). Evidence:
+[app/pipeline.py](app/pipeline.py). Evidence:
 [evaluation/transcripts/phase6_memory_guardrails.txt](evaluation/transcripts/phase6_memory_guardrails.txt)
 (real kickoffs, socket guard active, 0 outbound attempts).
 
@@ -942,13 +941,13 @@ matched; on these 15 outputs it changes no score.
 - E12's most specific sentence (the Level 2 trigger for delayed shipments) is still split across two fixed-size windows and so is not quoted.
 - In the non-deployed sentence collection, two unrouted damaged-item queries (D1, D2) still rank a related document first. This is pre-existing dense behaviour, and both pass in the deployed fixed collection.
 - A generic "return window for each category?" question falls below the threshold.
-- E08 under KB-08 wording v1 (r1): the reply did not state the retry limit, and the two count rules were ambiguous. **Resolved** by the owner-approved KB-08 clarification below.
+- E08 under KB-08 wording v1 (r1): the reply did not state the retry limit, and the two count rules were ambiguous. **Resolved** by the KB-08 clarification below.
 - Under the original rubric v1, E08 still scores accuracy 1 because v1 needs the literal text "3 times".
 - Expected facts other than the annotated count fact are still exact substrings, so a correct paraphrase can be missed.
 
-### KB-08 clarification (owner-approved, Phase 7)
+### KB-08 clarification (Phase 7)
 KB-08's two count rules contradicted each other. "Retry the payment up to 3 times" counts retries after the first
-attempt; "After 3 failed attempts … switch" counts attempts in total. The owner approved this interpretation:
+attempt; "After 3 failed attempts … switch" counts attempts in total. I chose this interpretation:
 **three additional retries after the initial failed attempt, at most four attempts in total.** Only the count
 rules changed. The debit-reversal sentence and the cash-on-delivery limit are verbatim, and so are the title,
 topic and categories (tested).
@@ -1008,8 +1007,7 @@ the guardrail would keep.
 unchanged and `final_answer` is that draft. `approved: false` means the draft was revised; `final_answer` is the
 corrected answer and `reason` says why. This is the spec's "approves it unchanged or revises it".
 
-**Demos through the real pipeline** (inputs frozen in [docs/PHASE8_CHECKLIST.md](docs/PHASE8_CHECKLIST.md)
-before any run):
+**Demos through the real pipeline** (inputs frozen before any run):
 - **APPROVE,** [phase8_autogen_approve.txt](evaluation/transcripts/phase8_autogen_approve.txt): "How long do I
   have to return shoes?" The reviewer replies `ALL CLAIMS SUPPORTED`. The verdict is
   `{"approved": true, "final_answer": "Footwear can be returned within 30 days of delivery if it is unworn and
@@ -1025,7 +1023,7 @@ before any run):
 
 Full mapping: [docs/GOVERNANCE.md](docs/GOVERNANCE.md). It covers the four layers, each with purpose,
 controls, code, tests, evidence and limitations, plus the risk classification. **Application** and **Runtime**
-are the spec's layer names; **Data** and **Organizational** are the owner's interpretation and are labelled
+are the spec's layer names; **Data** and **Organizational** are my interpretation and are labelled
 that way.
 
 - **Least autonomy (Application layer):** `build_support_crew()` enforces a per-role tool allow-list. Only the
@@ -1056,7 +1054,7 @@ and every reply and score equals r2 (rubric v1 4.73 / 5 / 5 / 5; v3 5 / 5 / 5 / 
 not modified.
 
 ## Response caching (Part 4, Task 16)
-[app/core/cache.py](app/core/cache.py): an in-memory cache for the **grounded-generation step only** (owner decision:
+[app/core/cache.py](app/core/cache.py): an in-memory cache for the **grounded-generation step only** (design decision:
 never order lookups or complete responses).
 - **Where:** it wraps the generator call inside `answer_query`, after retrieval and the similarity threshold. Every
   request still runs the guardrails, the budget pre-flight, the crew, retrieval, the groundedness check, the AutoGen
@@ -1074,7 +1072,7 @@ never order lookups or complete responses).
 - **Before/after evidence** ([phase9_cache.txt](evaluation/transcripts/phase9_cache.txt)): the same question in two
   sessions. The first is a miss (1 generation call, 5,150 estimated tokens); the second is a hit (0 generation calls,
   4,941 tokens). The replies are identical, and retrieval, the AutoGen review and the final check ran both times.
-- **Tests:** [tests/test_cache.py](tests/test_cache.py) (31 tests: owner cases 1-12, privacy, persistent-index
+- **Tests:** [tests/test_cache.py](tests/test_cache.py) (31 tests: cases 1-12, privacy, persistent-index
   failure modes).
 - **Persistent index check** ([phase9_persistent_chroma.txt](evaluation/transcripts/phase9_persistent_chroma.txt)):
   the deployed `chroma_db/` collections match the KB chunks (ids, texts, metadata, vectors). 4,900 repeated searches

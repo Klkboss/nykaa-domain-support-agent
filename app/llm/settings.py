@@ -50,7 +50,7 @@ _VARIABLE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 # call), which doubled request latency.
 OLLAMA_DEFAULT_URL = "http://127.0.0.1:11434"
 # Measured on a 6 GB RTX 4050 (evaluation/v2/ollama_measurements.json): fully on GPU, 0 errors in 12 requests, about
-# 2.3x faster than qwen2.5:7b-instruct (which spills 18% to CPU there). Owner-approved default.
+# 2.3x faster than qwen2.5:7b-instruct (which spills 18% to CPU there). Chosen default.
 OLLAMA_DEFAULT_MODEL = "qwen3:4b-instruct-2507-q4_K_M"
 # Ollama ignores the key, but the OpenAI SDK needs one; an explicit value also stops it reading OPENAI_API_KEY.
 _PLACEHOLDER_KEY = "not-set"

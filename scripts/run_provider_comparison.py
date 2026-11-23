@@ -49,7 +49,7 @@ from scripts.run_evaluation import METRICS, QUERIES_PATH, run_case, score, verif
 OUT_DIR = ROOT / "evaluation" / "v2"
 REPORT = ROOT / "evaluation" / "V2_PROVIDER_COMPARISON.md"
 R2_V1 = ROOT / "evaluation" / "remediation" / "evaluation_results_r2_kb08v2_rubric_v1.json"
-# Owner rule: start a real-model request only at or below this GPU temperature, and discard and re-run a request
+# Rule: start a real-model request only at or below this GPU temperature, and discard and re-run a request
 # only if it actually had thermal or power throttling (NVIDIA's cumulative counters grew during it).
 COOL_C = float(os.environ.get("EVAL_COOL_C", "65"))
 MAX_ATTEMPTS = int(os.environ.get("EVAL_MAX_ATTEMPTS", "4"))
