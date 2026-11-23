@@ -12,7 +12,21 @@ customer detail is fictional.
 
 ## v2: production upgrade
 
+![Demo: policy answer with its provenance panel, an order lookup, and a blocked prompt injection](docs/demo.gif)
+
+*Recorded against Groq gpt-oss-120b; waiting time is shortened in the GIF.*
+
 ![Chat UI, 1440 px, dark theme](docs/screenshots/chat-1440-dark.png)
+
+<p>
+  <img src="docs/screenshots/progress-1440-dark.png" width="62%" alt="Live progress steps while an answer is prepared, 1440 px, dark theme">
+  <img src="docs/screenshots/chat-360-dark.png" width="30%" alt="Chat UI on a 360 px phone screen, dark theme">
+</p>
+
+*In these screenshots Groq did not answer, so the backup model (Cloudflare) did: the "How this answer was made"
+panel shows the failover.*
+
+All sizes (360, 768 and 1440 px) in both themes: [docs/screenshots/](docs/screenshots/).
 
 ### What v2 adds
 - **Real models:** a provider layer for any OpenAI-compatible server. It runs locally on Ollama; the default is
@@ -326,6 +340,9 @@ the frozen 15-query evaluation on the best three. `LLM_REASONING_EFFORT=low` thr
 ### Demo and limits
 - [docs/DEMO_RECORDING.md](docs/DEMO_RECORDING.md): how to record a 1–2 minute demo of the chat UI on Windows.
 - Screenshots at 360, 768 and 1440 px in both themes: [docs/screenshots/](docs/screenshots/).
+- Animated demo: [docs/demo.gif](docs/demo.gif), recorded from a running server by
+  [scripts/capture_demo_gif.py](scripts/capture_demo_gif.py). It is dev-only and needs playwright, pillow and
+  Microsoft Edge.
 - **Rate limits are kept in memory**, so they are per process and reset on restart. A multi-instance deploy would
   need a shared store.
 - **Latency is about 8 s per answer (median; 12.4 s max) on a laptop GPU.** A request heats this GPU by ~25–30 °C,

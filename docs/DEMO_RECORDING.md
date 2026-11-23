@@ -17,7 +17,7 @@ A short video or GIF of the chat page for the README, LinkedIn or a portfolio. E
    .venv\Scripts\python.exe -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000
    ```
    Or use the full stack: `docker compose up` with `MOCK_LLM=false` and `LLM_PROVIDER=ollama` in `.env`. The image
-   limits each visitor to 6 questions a minute, so space the questions out or set `RATE_LIMIT_PER_MINUTE=0` in
+   limits each visitor to 3 questions a minute, so space the questions out or set `RATE_LIMIT_PER_MINUTE=0` in
    `.env` for the recording.
 3. Open http://127.0.0.1:8000 in Edge or Chrome:
    - make the window 1280×720 or 1440×900, at 100 % zoom;

@@ -242,3 +242,12 @@ def test_the_explanation_names_the_provider_that_answered():
     x = _explain(result, RequestTrace(settings=fallback, failover=True), primary, 1.0)
     assert (x.provider, x.model, x.failover) == ("api.cloudflare.com", "@cf/gpt-oss", True)
     assert "ACCOUNT123" not in x.model_dump_json()  # the host only, never the path with the account ID
+
+
+def test_the_page_labels_every_progress_step_including_the_failover_switch():
+    from app.pipeline import FAILOVER_STEP
+
+    script = (WEB_DIR / "static" / "app.js").read_text(encoding="utf-8")
+    labels = dict(re.findall(r"(\w+): \"([^\"]+)\"", script.split("const STEP_LABELS = {", 1)[1].split("};", 1)[0]))
+    assert set(labels) == {*STEPS, FAILOVER_STEP}
+    assert labels[FAILOVER_STEP] == "Switching to backup model"

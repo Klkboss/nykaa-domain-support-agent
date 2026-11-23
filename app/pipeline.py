@@ -14,7 +14,7 @@ Session history therefore only ever holds masked questions and guardrail-checked
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from langchain_core.messages import BaseMessage
@@ -51,6 +51,8 @@ BUDGET_REPLY = ("This request is too large to process within the per-request bud
                 "Please shorten it or split it into smaller questions.")
 # v2 chat UI: the stages a request reports while it runs, in order ("order" only when the order tool is called).
 STEPS = ("safety", "policies", "order", "composing", "reviewing")
+# Reported once when the primary provider failed and the request restarts on the fallback (only with failover).
+FAILOVER_STEP = "failover"
 
 
 @dataclass
@@ -64,8 +66,13 @@ class RequestTrace:
     budget: RequestBudget | None = None
     settings: LLMSettings | None = None  # the provider that made this answer (the fallback after a failover)
     failover: bool = False  # the primary provider failed and the fallback answered (or failed too)
+    shown: set[str] = field(default_factory=set)  # steps already reported for this request
 
     def step(self, name: str) -> None:
+        """Report a stage once per request: a failover restart repeats stages the visitor has already seen."""
+        if name in self.shown:
+            return
+        self.shown.add(name)
         if self.on_step:
             self.on_step(name)
 
@@ -156,6 +163,7 @@ class SupportAssistant:
                 result = self._attempt(inputs, primary)
         if self.fallback_settings is not None and _provider_failed(result):
             trace.failover = True
+            trace.step(FAILOVER_STEP)  # one "Switching to backup model" step; the restart's repeats are not shown
             with using_llm_settings(self.fallback_settings):
                 result = self._attempt(inputs, self.fallback_settings)
         if _provider_failed(result):
@@ -174,7 +182,8 @@ class SupportAssistant:
         rag_tool.cache = self.generation_cache  # caches only that generation call; everything else still runs
         try:
             run = run_support_crew(question, format_history(inputs["history"]), rag_tool,
-                                   composer_llm=composer_llm, budget=budget, on_step=trace.on_step)
+                                   composer_llm=composer_llm, budget=budget,
+                                   on_step=trace.step if trace.on_step else None)  # step(): each stage once
             self.last_crew_run = trace.crew_run = run
             draft = SupportDraft.model_validate(run.structured.model_dump() if run.structured else run.raw)
         except BudgetExceeded:

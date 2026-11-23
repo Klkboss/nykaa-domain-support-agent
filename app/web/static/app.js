@@ -14,6 +14,7 @@ const SAMPLES = [
 const STEP_LABELS = {
   safety: "Checking safety", policies: "Searching policies", order: "Looking up order",
   composing: "Composing", reviewing: "Reviewing",
+  failover: "Switching to backup model",  // the primary provider failed; the request restarts on the fallback
 };
 const STATUS = {
   answered: ["Answered", "ok"], needs_order_id: ["Needs order ID", "warn"], fallback: ["Not in the policies", "warn"],
@@ -54,9 +55,13 @@ async function showProvider() {
   const badge = $("provider");
   try {
     const health = await (await fetch("/health", { cache: "no-store" })).json();
-    const mock = health.provider === "mock";
-    badge.textContent = mock ? "Mock LLM" : `${health.provider === "ollama" ? "Ollama" : health.provider} · ${health.model}`;
-    badge.title = `Model: ${health.model} · storage: ${health.database}`;
+    const mock = health.provider === "mock", ollama = health.provider === "ollama";
+    const full = mock ? "Mock LLM" : `${ollama ? "Ollama" : health.provider} · ${health.model}`;
+    // narrow screens: "groq · gpt-oss-120b" (the host's name and the model's last part); the full label stays in title
+    const short = mock || ollama ? full
+      : `${health.provider.split(".").slice(-2)[0]} · ${health.model.split("/").pop()}`;
+    badge.replaceChildren(el("span", "full", full), el("span", "short", short));
+    badge.title = `${full} · storage: ${health.database}`;
     badge.dataset.state = "ok";
   } catch (e) {
     badge.textContent = "offline";

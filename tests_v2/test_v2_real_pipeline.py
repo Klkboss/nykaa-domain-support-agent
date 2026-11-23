@@ -578,11 +578,15 @@ ALL_ROLES = ("retrieval", "lookup", "generator", "composer", "reviewer", "editor
 def test_a_rate_limited_primary_fails_over_and_the_fallback_answers(collections, real_provider, monkeypatch):
     from app.pipeline import RequestTrace
 
-    a, router = failover_assistant(collections, real_provider, monkeypatch,
-                                   CrewFake(**{role: RATE_LIMITED for role in ALL_ROLES}), CrewFake())
-    trace = RequestTrace()
+    # the primary gets as far as the policy search (its generator answers) and fails composing the draft
+    primary = CrewFake(composer=RATE_LIMITED, reviewer=RATE_LIMITED, editor=RATE_LIMITED)
+    a, router = failover_assistant(collections, real_provider, monkeypatch, primary, CrewFake())
+    steps: list[str] = []
+    trace = RequestTrace(on_step=steps.append)
     r = a.ask(f"s-{uuid.uuid4().hex[:8]}", SHOES, trace)
     assert r.status == "answered" and r.reply != BUSY_REPLY
+    # each stage once, and the switch once: the fallback's repeat of "policies" and "composing" is not shown
+    assert steps == ["safety", "policies", "composing", "failover", "reviewing"]
     assert trace.failover and trace.settings.base_url == FALLBACK_URL and trace.settings.model == "fallback-model"
     assert "llm.test" in router.hosts and router.hosts[-1] == "fallback.test"
     assert set(router.fallback.roles) >= {"retrieval", "generator", "composer", "reviewer", "editor"}

@@ -52,6 +52,13 @@ button, textarea { font: inherit; color: inherit; }
 .badge { display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; padding: 4px 10px; border-radius: 999px;
   border: 1px solid var(--border); background: var(--chip); font-size: 12px; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; }
+.badge span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.badge .short { display: none; }
+/* narrow screens: the short label, on its own row under the title (the first row has no room left for it) */
+@media (max-width: 600px) {
+  .badge .full { display: none; } .badge .short { display: inline; }
+  .topbar { flex-wrap: wrap; row-gap: 6px; } .badge { order: 1; }
+}
 .badge::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
 .badge[data-state="ok"]::before { background: var(--ok); }
 .badge[data-state="down"]::before { background: var(--bad); }

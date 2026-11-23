@@ -158,7 +158,7 @@ def create_app(log_path: Path = DEFAULT_LOG_PATH, index_dir: Path | None = None,
     @app.get("/health")
     async def health(request: Request) -> dict:
         settings = request.app.state.assistant.llm_settings
-        return {"status": "ok", "provider": settings.provider,
+        return {"status": "ok", "provider": settings.label,  # mock, ollama, or the hosted host (api.groq.com)
                 "model": settings.model if settings.is_real else "deterministic mock",
                 "database": "postgresql" if database_url() else "in-memory",
                 "rate_limit": {"per_minute": limiter.per_minute, "per_day": limiter.per_day,
